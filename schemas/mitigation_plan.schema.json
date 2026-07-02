@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/noicecance/mitigation_plan.schema.json",
+  "title": "NoiceCance Mitigation Plan",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "plan_id",
+    "scenario",
+    "input_summary",
+    "noise_profile",
+    "control_suitability",
+    "recommended_controls",
+    "blocked_controls",
+    "anc_policy",
+    "safety",
+    "privacy",
+    "caveats"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "2.0"
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["id", "name", "primary_goal"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "primary_goal": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "input_summary": {
+      "type": "object",
+      "required": ["complaint", "recording_used", "hardware_assumption"],
+      "properties": {
+        "complaint": {
+          "type": "string"
+        },
+        "recording_used": {
+          "type": "boolean"
+        },
+        "hardware_assumption": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "noise_profile": {
+      "type": "object",
+      "required": [
+        "noise_classes",
+        "dominant_bands",
+        "event_pattern",
+        "source_model",
+        "confidence"
+      ],
+      "properties": {
+        "noise_classes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dominant_bands": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["low_frequency", "mid_frequency", "high_frequency", "broadband"]
+          }
+        },
+        "event_pattern": {
+          "type": "string",
+          "enum": ["continuous", "intermittent", "impulsive", "mixed"]
+        },
+        "source_model": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "control_suitability": {
+      "type": "object",
+      "required": ["near_field_anc", "passive_insulation", "masking_sound", "hearing_protection"],
+      "properties": {
+        "near_field_anc": {
+          "$ref": "#/$defs/control_suitability"
+        },
+        "passive_insulation": {
+          "$ref": "#/$defs/control_suitability"
+        },
+        "masking_sound": {
+          "$ref": "#/$defs/control_suitability"
+        },
+        "hearing_protection": {
+          "$ref": "#/$defs/control_suitability"
+        }
+      },
+      "additionalProperties": true
+    },
+    "recommended_controls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/control"
+      }
+    },
+    "blocked_controls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/control"
+      }
+    },
+    "anc_policy": {
+      "type": "object",
+      "required": ["enabled", "reason"],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "target_bands_hz": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["min", "max"],
+            "properties": {
+              "min": {
+                "type": "number",
+                "minimum": 0
+              },
+              "max": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "quiet_zone": {
+          "type": "string"
+        },
+        "microphone_strategy": {
+          "type": "string"
+        },
+        "speaker_strategy": {
+          "type": "string"
+        },
+        "preserve_events": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "safety": {
+      "type": "object",
+      "required": ["decision", "rules"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["pass", "pass_with_warnings", "blocked"]
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["raw_audio_retained", "notes"],
+      "properties": {
+        "raw_audio_retained": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "caveats": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "control_suitability": {
+      "type": "object",
+      "required": ["status", "score", "reason"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["recommended", "partial", "not_recommended", "blocked"]
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "control": {
+      "type": "object",
+      "required": ["type", "target", "reason"],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

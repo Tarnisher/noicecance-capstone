@@ -1,0 +1,47 @@
+# Secrets and local credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+credentials/
+credentials.*
+secrets/
+*.kubeconfig
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environments
+.venv/
+venv/
+env/
+ENV/
+
+# JavaScript dependencies and builds
+node_modules/
+dist/
+build/
+coverage/
+
+# Logs and generated local output
+*.log
+*.tmp
+*.temp
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NoiceCance Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="NoiceCance workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Agents for Good</p>
+            <h1>NoiceCance</h1>
+          </div>
+          <div class="status-strip" aria-label="System status">
+            <span id="statusMode">Offline deterministic demo</span>
+            <span id="statusDecision">Awaiting analysis</span>
+          </div>
+        </header>
+
+        <section class="input-band" aria-label="Scenario input">
+          <div class="scenario-tabs" role="tablist" aria-label="Noise scenario">
+            <button class="scenario-tab active" type="button" data-scenario="intersection">
+              Six-lane intersection
+            </button>
+            <button class="scenario-tab" type="button" data-scenario="airport">
+              Airport-adjacent home
+            </button>
+            <button class="scenario-tab" type="button" data-scenario="high_frequency">
+              High-frequency rejection
+            </button>
+          </div>
+          <label class="complaint-label" for="complaintInput">Noise complaint</label>
+          <textarea id="complaintInput" rows="4"></textarea>
+          <div class="actions">
+            <button id="runButton" class="primary-action" type="button">Run agent loop</button>
+            <button id="exportButton" class="secondary-action" type="button">Export JSON</button>
+          </div>
+        </section>
+
+        <section class="dashboard-grid" aria-label="Analysis results">
+          <section class="panel map-panel" aria-label="Sound field">
+            <div class="panel-heading">
+              <h2>Sound Field</h2>
+              <span id="mapBadge" class="badge">Planning</span>
+            </div>
+            <div class="room-map" id="roomMap">
+              <svg viewBox="0 0 720 420" role="img" aria-label="Room sound field diagram">
+                <defs>
+                  <linearGradient id="wallGradient" x1="0" x2="1" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#edf2f7" />
+                    <stop offset="100%" stop-color="#dbe5ee" />
+                  </linearGradient>
+                  <radialGradient id="quietGradient" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#89d6c7" stop-opacity="0.72" />
+                    <stop offset="100%" stop-color="#89d6c7" stop-opacity="0.08" />
+                  </radialGradient>
+                </defs>
+                <rect x="34" y="42" width="652" height="330" rx="8" class="room-shell" />
+                <rect x="34" y="42" width="42" height="330" class="window-zone" />
+                <rect x="500" y="202" width="126" height="86" rx="8" class="bed" />
+                <rect x="516" y="214" width="56" height="34" rx="8" class="pillow" />
+                <circle id="quietZone" cx="546" cy="230" r="78" class="quiet-zone" />
+                <g id="noiseWaves" class="noise-waves"></g>
+                <g id="deviceLayer">
+                  <circle cx="128" cy="144" r="8" class="mic" />
+                  <circle cx="532" cy="188" r="8" class="mic" />
+                  <rect x="458" y="162" width="18" height="58" rx="4" class="speaker" />
+                  <rect x="458" y="246" width="18" height="58" rx="4" class="speaker" />
+                </g>
+                <text x="42" y="28" class="map-label">Window path</text>
+                <text x="498" y="314" class="map-label">Bedside quiet zone</text>
+                <text id="sourceLabel" x="92" y="394" class="map-label">Traffic source</text>
+              </svg>
+            </div>
+            <div class="map-legend">
+              <span><i class="legend-dot noise"></i>Noise entry</span>
+              <span><i class="legend-dot quiet"></i>Quiet zone</span>
+              <span><i class="legend-dot control"></i>Mic and speaker array</span>
+            </div>
+          </section>
+
+          <section class="panel trace-panel" aria-label="Agent trace">
+            <div class="panel-heading">
+              <h2>Agent Trace</h2>
+              <span id="iterationBadge" class="badge">0 iterations</span>
+            </div>
+            <ol id="agentTrace" class="trace-list"></ol>
+          </section>
+
+          <section class="panel profile-panel" aria-label="Noise profile">
+            <div class="panel-heading">
+              <h2>Noise Profile</h2>
+              <span id="confidenceBadge" class="badge">medium</span>
+            </div>
+            <div id="noiseProfile" class="metric-grid"></div>
+          </section>
+
+          <section class="panel suitability-panel" aria-label="Control suitability">
+            <div class="panel-heading">
+              <h2>Control Suitability</h2>
+              <span id="ancBadge" class="badge">ANC pending</span>
+            </div>
+            <div id="suitabilityList" class="suitability-list"></div>
+          </section>
+
+          <section class="panel controls-panel" aria-label="Controls">
+            <div class="split-heading">
+              <h2>Recommended</h2>
+              <h2>Blocked</h2>
+            </div>
+            <div class="control-columns">
+              <ul id="recommendedControls" class="control-list"></ul>
+              <ul id="blockedControls" class="control-list blocked"></ul>
+            </div>
+          </section>
+
+          <section class="panel json-panel" aria-label="Mitigation JSON">
+            <div class="panel-heading">
+              <h2>mitigation_plan.json</h2>
+              <span id="privacyBadge" class="badge">raw audio off</span>
+            </div>
+            <pre id="jsonOutput"></pre>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

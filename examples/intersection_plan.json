@@ -1,0 +1,107 @@
+{
+  "schema_version": "2.0",
+  "plan_id": "example-intersection-sleep",
+  "scenario": {
+    "id": "intersection_resident",
+    "name": "Six-lane intersection resident",
+    "primary_goal": "sleep_protection"
+  },
+  "input_summary": {
+    "complaint": "Second-floor bedroom facing a two-way six-lane intersection with braking, horns, motorcycles, and low engine rumble at night.",
+    "recording_used": false,
+    "hardware_assumption": "future bedside microphone and speaker array, not a laptop speaker"
+  },
+  "noise_profile": {
+    "noise_classes": ["road_traffic", "engine_rumble", "horns_or_braking"],
+    "dominant_bands": ["low_frequency", "mid_frequency", "broadband"],
+    "event_pattern": "mixed",
+    "source_model": "outdoor traffic transmitted through window and room reflections",
+    "confidence": "medium"
+  },
+  "control_suitability": {
+    "near_field_anc": {
+      "status": "partial",
+      "score": 0.62,
+      "reason": "Low-frequency rumble near the pillow may be reduced in a small quiet zone, but horns and braking transients should not be treated as reliable ANC targets."
+    },
+    "passive_insulation": {
+      "status": "recommended",
+      "score": 0.88,
+      "reason": "Window sealing and passive insulation handle broadband and higher-frequency components better than open-air ANC."
+    },
+    "masking_sound": {
+      "status": "partial",
+      "score": 0.54,
+      "reason": "Low-level masking may reduce perceived residual events but must not cover alarms."
+    },
+    "hearing_protection": {
+      "status": "partial",
+      "score": 0.45,
+      "reason": "Optional for sleep comfort if safe alerts remain audible."
+    }
+  },
+  "recommended_controls": [
+    {
+      "type": "passive_insulation",
+      "target": "window leakage and broadband traffic noise",
+      "reason": "The room receives noise through windows and reflections; passive treatment is the first control layer.",
+      "priority": "high"
+    },
+    {
+      "type": "near_field_anc",
+      "target": "low-frequency engine rumble near pillow",
+      "reason": "A small bedside quiet zone is plausible for stable low-frequency components with calibrated hardware.",
+      "priority": "medium"
+    },
+    {
+      "type": "safety_pass_through",
+      "target": "alarms, sirens, smoke detectors, urgent speech",
+      "reason": "Sleep protection must preserve safety-critical sounds.",
+      "priority": "high"
+    }
+  ],
+  "blocked_controls": [
+    {
+      "type": "whole_room_anc",
+      "target": "entire bedroom",
+      "reason": "Open-air whole-room cancellation is not realistic for reflected traffic noise.",
+      "priority": "high"
+    }
+  ],
+  "anc_policy": {
+    "enabled": true,
+    "reason": "Enable only as a limited low-frequency bedside quiet-zone strategy.",
+    "target_bands_hz": [
+      {
+        "min": 45,
+        "max": 250
+      }
+    ],
+    "quiet_zone": "pillow_area",
+    "microphone_strategy": "reference microphone near window path and error microphone near pillow",
+    "speaker_strategy": "small calibrated speaker array near headboard",
+    "preserve_events": ["alarm", "siren", "smoke_detector", "urgent_speech"],
+    "limits": {
+      "max_output_mode": "conservative",
+      "requires_calibration": true,
+      "disable_for_impulsive_events": true
+    }
+  },
+  "safety": {
+    "decision": "pass_with_warnings",
+    "rules": [
+      "Do not claim full-room cancellation.",
+      "Preserve alarms and urgent speech.",
+      "Use conservative output limits and calibrated hardware."
+    ]
+  },
+  "privacy": {
+    "raw_audio_retained": false,
+    "notes": ["Only derived acoustic features should be retained by default."]
+  },
+  "caveats": [
+    "This plan is not a medical diagnosis.",
+    "A laptop speaker is not a valid actuator for real room-scale traffic ANC.",
+    "Horns and braking peaks may require passive controls or alert-aware masking rather than active cancellation."
+  ]
+}

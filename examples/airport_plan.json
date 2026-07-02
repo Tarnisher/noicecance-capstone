@@ -1,0 +1,107 @@
+{
+  "schema_version": "2.0",
+  "plan_id": "example-airport-night",
+  "scenario": {
+    "id": "airport_adjacent_home",
+    "name": "Airport-adjacent home",
+    "primary_goal": "nighttime_sleep_protection"
+  },
+  "input_summary": {
+    "complaint": "Several aircraft events per hour create low-frequency rumble and loud peaks that wake the family.",
+    "recording_used": false,
+    "hardware_assumption": "future bedside quiet-zone hardware with local DSP"
+  },
+  "noise_profile": {
+    "noise_classes": ["aircraft_overflight", "low_frequency_rumble", "intermittent_peak_events"],
+    "dominant_bands": ["low_frequency", "broadband"],
+    "event_pattern": "intermittent",
+    "source_model": "outdoor aircraft noise transmitted through building envelope with room reflections",
+    "confidence": "medium"
+  },
+  "control_suitability": {
+    "near_field_anc": {
+      "status": "partial",
+      "score": 0.52,
+      "reason": "Low-frequency event tails may be reduced near the pillow, but peaks are intermittent and require conservative handling."
+    },
+    "passive_insulation": {
+      "status": "recommended",
+      "score": 0.91,
+      "reason": "Building envelope and window treatment are the primary controls for aircraft noise."
+    },
+    "masking_sound": {
+      "status": "partial",
+      "score": 0.49,
+      "reason": "Can reduce perceived contrast between quiet periods and aircraft events if kept below safe levels."
+    },
+    "hearing_protection": {
+      "status": "partial",
+      "score": 0.5,
+      "reason": "Optional sleep aid if the user can still detect safety alerts."
+    }
+  },
+  "recommended_controls": [
+    {
+      "type": "passive_insulation",
+      "target": "aircraft noise entering through windows and vents",
+      "reason": "Passive controls reduce broad frequency content without relying on phase cancellation.",
+      "priority": "high"
+    },
+    {
+      "type": "event_aware_near_field_anc",
+      "target": "low-frequency rumble near pillow",
+      "reason": "A limited quiet-zone strategy may help with predictable low-frequency portions of aircraft events.",
+      "priority": "medium"
+    },
+    {
+      "type": "sleep_routine_and_masking",
+      "target": "perceived aircraft event contrast",
+      "reason": "Low-level masking can make intermittent events less startling when configured safely.",
+      "priority": "low"
+    }
+  ],
+  "blocked_controls": [
+    {
+      "type": "high_frequency_anc",
+      "target": "sharp broadband aircraft peaks",
+      "reason": "High-frequency and transient components are not reliable open-air ANC targets.",
+      "priority": "high"
+    }
+  ],
+  "anc_policy": {
+    "enabled": true,
+    "reason": "Enable only for conservative low-frequency quiet-zone support, not for whole-room aircraft cancellation.",
+    "target_bands_hz": [
+      {
+        "min": 35,
+        "max": 180
+      }
+    ],
+    "quiet_zone": "bedside_pillow_area",
+    "microphone_strategy": "reference microphone near likely window path and error microphone near sleep position",
+    "speaker_strategy": "calibrated low-frequency-capable bedside speaker pair",
+    "preserve_events": ["alarm", "siren", "smoke_detector", "urgent_speech"],
+    "limits": {
+      "max_output_mode": "conservative",
+      "requires_calibration": true,
+      "event_triggered_mode": true
+    }
+  },
+  "safety": {
+    "decision": "pass_with_warnings",
+    "rules": [
+      "Do not promise full cancellation of aircraft events.",
+      "Disable unsafe or uncalibrated output.",
+      "Preserve safety-critical sounds."
+    ]
+  },
+  "privacy": {
+    "raw_audio_retained": false,
+    "notes": ["Derived event features are sufficient for planning."]
+  },
+  "caveats": [
+    "Aircraft noise can contain high-energy broadband peaks that active control may not handle.",
+    "Building envelope improvements may matter more than active control.",
+    "The plan requires calibrated hardware before any real acoustic output."
+  ]
+}

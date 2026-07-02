@@ -1,0 +1,92 @@
+{
+  "schema_version": "2.0",
+  "plan_id": "example-high-frequency-rejected",
+  "scenario": {
+    "id": "high_frequency_workshop_noise",
+    "name": "High-frequency impulsive noise",
+    "primary_goal": "avoid_bad_anc_recommendation"
+  },
+  "input_summary": {
+    "complaint": "Sharp, high-pitched, unpredictable noise from a nearby workshop is the main problem.",
+    "recording_used": false,
+    "hardware_assumption": "unknown consumer speaker hardware"
+  },
+  "noise_profile": {
+    "noise_classes": ["high_frequency_noise", "impulsive_events", "unpredictable_source"],
+    "dominant_bands": ["high_frequency", "broadband"],
+    "event_pattern": "impulsive",
+    "source_model": "unpredictable high-frequency source with reflections",
+    "confidence": "medium"
+  },
+  "control_suitability": {
+    "near_field_anc": {
+      "status": "blocked",
+      "score": 0.08,
+      "reason": "High-frequency impulsive noise changes too quickly across space for reliable open-air cancellation."
+    },
+    "passive_insulation": {
+      "status": "recommended",
+      "score": 0.86,
+      "reason": "Sealing, mass, and absorption are more appropriate for high-frequency airborne noise."
+    },
+    "masking_sound": {
+      "status": "partial",
+      "score": 0.38,
+      "reason": "May reduce annoyance but should not be used as hearing protection."
+    },
+    "hearing_protection": {
+      "status": "recommended",
+      "score": 0.82,
+      "reason": "Certified protection may be required for occupational or repeated high-frequency exposure."
+    }
+  },
+  "recommended_controls": [
+    {
+      "type": "passive_insulation",
+      "target": "high-frequency airborne noise path",
+      "reason": "High-frequency noise is better handled through sealing, absorption, barriers, and source control.",
+      "priority": "high"
+    },
+    {
+      "type": "hearing_protection",
+      "target": "potentially hazardous exposure",
+      "reason": "Certified protection is more reliable than consumer ANC for high-frequency impulsive noise.",
+      "priority": "high"
+    }
+  ],
+  "blocked_controls": [
+    {
+      "type": "near_field_anc",
+      "target": "sharp high-frequency events",
+      "reason": "Open-air ANC can fail or create louder hot spots for high-frequency impulsive noise.",
+      "priority": "high"
+    },
+    {
+      "type": "ultrasonic_cancellation",
+      "target": "audible high-frequency noise",
+      "reason": "Ultrasonic transducers do not directly cancel audible noise unless converted into audible sound, which adds safety and distortion risks.",
+      "priority": "high"
+    }
+  ],
+  "anc_policy": {
+    "enabled": false,
+    "reason": "Noise profile is dominated by high-frequency impulsive content that is unsuitable for open-air ANC."
+  },
+  "safety": {
+    "decision": "blocked",
+    "rules": [
+      "Do not recommend ANC for high-frequency impulsive noise.",
+      "Do not recommend ultrasonic cancellation for audible noise.",
+      "Recommend passive or certified protective controls instead."
+    ]
+  },
+  "privacy": {
+    "raw_audio_retained": false,
+    "notes": ["No raw audio is needed to reject ANC for this described profile."]
+  },
+  "caveats": [
+    "If this is a workplace exposure, professional measurement and applicable safety rules matter.",
+    "Masking sound is not a substitute for hearing protection.",
+    "A mitigation plan should prioritize source control where possible."
+  ]
+}

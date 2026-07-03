@@ -33,7 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--scenario",
         default="intersection",
-        help="Scenario id: intersection, airport, or high_frequency.",
+        help="Scenario id: intersection, airport, high_frequency, or custom.",
     )
     parser.add_argument(
         "--complaint",

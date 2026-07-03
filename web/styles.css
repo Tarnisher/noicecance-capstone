@@ -110,16 +110,16 @@ h2 {
 
 .input-band {
   display: grid;
-  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.4fr) auto;
+  grid-template-columns: minmax(420px, 0.75fr) minmax(520px, 1.35fr) minmax(170px, 0.28fr);
   gap: 14px;
-  align-items: end;
+  align-items: stretch;
   padding: 14px;
   margin-bottom: 14px;
 }
 
 .scenario-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -134,6 +134,10 @@ h2 {
   color: var(--ink);
   font-weight: 750;
   cursor: pointer;
+}
+
+.scenario-tab {
+  min-height: 62px;
 }
 
 .scenario-tab:hover,
@@ -157,10 +161,17 @@ h2 {
   text-transform: uppercase;
 }
 
+.complaint-field {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+
 textarea {
   display: block;
   width: 100%;
-  min-height: 92px;
+  height: 100%;
+  min-height: 132px;
   resize: vertical;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -179,7 +190,7 @@ button:focus-visible {
   display: grid;
   grid-template-columns: minmax(130px, 1fr);
   gap: 8px;
-  min-width: 150px;
+  min-width: 170px;
 }
 
 .primary-action {
@@ -198,13 +209,13 @@ button:focus-visible {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(420px, 1.35fr) minmax(300px, 0.9fr) minmax(360px, 1fr);
+  grid-template-columns: minmax(420px, 1.2fr) minmax(320px, 0.85fr) minmax(360px, 0.95fr);
   gap: 14px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .panel {
-  min-height: 260px;
+  min-height: 0;
   padding: 14px;
   overflow: hidden;
 }
@@ -218,7 +229,6 @@ button:focus-visible {
   margin-bottom: 12px;
 }
 
-.map-panel,
 .json-panel {
   grid-row: span 2;
 }
@@ -226,7 +236,8 @@ button:focus-visible {
 .room-map {
   width: 100%;
   aspect-ratio: 12 / 7;
-  min-height: 260px;
+  min-height: 230px;
+  max-height: 360px;
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
@@ -392,6 +403,46 @@ button:focus-visible {
   font-size: 0.96rem;
 }
 
+.measurement-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.measurement-block,
+.conclusion-card {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.measurement-block strong,
+.conclusion-card strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.88rem;
+}
+
+.measurement-block ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.conclusion-card {
+  display: grid;
+  gap: 10px;
+}
+
+.conclusion-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 .suitability-list {
   display: grid;
   gap: 10px;
@@ -432,8 +483,9 @@ button:focus-visible {
 
 .control-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  min-width: 0;
 }
 
 .control-list {
@@ -442,14 +494,17 @@ button:focus-visible {
   margin: 0;
   padding: 0;
   list-style: none;
+  min-width: 0;
 }
 
 .control-list li {
+  min-width: 0;
   min-height: 74px;
   padding: 10px;
   border: 1px solid rgba(47,143,131,0.25);
   border-radius: 8px;
   background: var(--green-soft);
+  overflow-wrap: anywhere;
 }
 
 .control-list.blocked li {
@@ -497,9 +552,16 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .map-panel,
   .json-panel {
     grid-row: auto;
+  }
+
+  .scenario-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .scenario-tab {
+    min-height: 50px;
   }
 
   .actions {

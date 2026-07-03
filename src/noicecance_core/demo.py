@@ -20,7 +20,7 @@ def main(argv: list[str] | None = None) -> int:
         "--scenario",
         choices=sorted(SCENARIOS),
         default="intersection",
-        help="Built-in scenario to plan for.",
+        help="Scenario to plan for, including custom local assessment.",
     )
     parser.add_argument(
         "--complaint",

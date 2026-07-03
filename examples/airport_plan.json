@@ -1,6 +1,7 @@
 {
   "schema_version": "2.0",
-  "plan_id": "example-airport-night",
+  "plan_id": "plan-airport",
+  "generated_at": "2026-07-02T23:23:28+00:00",
   "scenario": {
     "id": "airport_adjacent_home",
     "name": "Airport-adjacent home",
@@ -9,11 +10,59 @@
   "input_summary": {
     "complaint": "Several aircraft events per hour create low-frequency rumble and loud peaks that wake the family.",
     "recording_used": false,
-    "hardware_assumption": "future bedside quiet-zone hardware with local DSP"
+    "hardware_assumption": "future calibrated quiet-zone hardware"
+  },
+  "measurement_plan": {
+    "objective": "Confirm whether low-frequency content is stable enough for a limited quiet-zone policy.",
+    "privacy_mode": "local_features_only",
+    "recommended_windows": [
+      "Collect one quiet baseline when the target noise is absent.",
+      "Collect one representative period when the target noise is present.",
+      "Log at least three peak events with timestamps."
+    ],
+    "microphone_positions": [
+      "At the main listener position, such as pillow, desk, or chair.",
+      "Near the likely entry path, such as window, wall vent, door gap, or facade."
+    ],
+    "observations_to_log": [
+      "time of day and duration",
+      "room, window, and door state",
+      "source notes such as traffic, aircraft, machinery, voices, or unknown",
+      "user impact such as sleep, focus, stress, or safety concern"
+    ],
+    "derived_features_to_extract": [
+      "median_dba",
+      "peak_dba",
+      "dominant_frequency_band",
+      "event_pattern",
+      "low_frequency_dominance",
+      "high_frequency_dominance"
+    ],
+    "minimum_sample_count": 4,
+    "safety_notes": [
+      "Keep raw audio local by default; retain only derived acoustic features in the report.",
+      "Record whether alarms, sirens, smoke detectors, or urgent speech must remain audible.",
+      "Before any active playback, repeat measurements with calibrated microphones and output limits."
+    ]
+  },
+  "observed_features": {
+    "provided": false,
+    "raw_audio_retained": false,
+    "derived_features": {},
+    "notes": [
+      "No measured features were provided; conclusion is based on complaint and scenario templates."
+    ]
   },
   "noise_profile": {
-    "noise_classes": ["aircraft_overflight", "low_frequency_rumble", "intermittent_peak_events"],
-    "dominant_bands": ["low_frequency", "broadband"],
+    "noise_classes": [
+      "aircraft_overflight",
+      "low_frequency_rumble",
+      "intermittent_peak_events"
+    ],
+    "dominant_bands": [
+      "broadband",
+      "low_frequency"
+    ],
     "event_pattern": "intermittent",
     "source_model": "outdoor aircraft noise transmitted through building envelope with room reflections",
     "confidence": "medium"
@@ -22,55 +71,61 @@
     "near_field_anc": {
       "status": "partial",
       "score": 0.52,
-      "reason": "Low-frequency event tails may be reduced near the pillow, but peaks are intermittent and require conservative handling."
+      "reason": "Low-frequency event tails may be reduced in a small quiet zone, but intermittent peaks require conservative handling."
     },
     "passive_insulation": {
       "status": "recommended",
-      "score": 0.91,
-      "reason": "Building envelope and window treatment are the primary controls for aircraft noise."
+      "score": 0.82,
+      "reason": "Passive controls reduce airborne and reflected noise without depending on phase cancellation."
     },
     "masking_sound": {
       "status": "partial",
-      "score": 0.49,
-      "reason": "Can reduce perceived contrast between quiet periods and aircraft events if kept below safe levels."
+      "score": 0.48,
+      "reason": "Masking can reduce perceived residual events, but it must not cover safety-critical sounds or replace hearing protection."
     },
     "hearing_protection": {
       "status": "partial",
-      "score": 0.5,
-      "reason": "Optional sleep aid if the user can still detect safety alerts."
+      "score": 0.45,
+      "reason": "Certified protection may be needed for high-frequency or occupational exposure; for sleep it is optional only if safety alerts remain audible."
     }
   },
   "recommended_controls": [
     {
       "type": "passive_insulation",
-      "target": "aircraft noise entering through windows and vents",
-      "reason": "Passive controls reduce broad frequency content without relying on phase cancellation.",
+      "target": "airborne and reflected noise paths",
+      "reason": "Passive treatment works across frequency bands and does not depend on a clean phase model.",
       "priority": "high"
     },
     {
-      "type": "event_aware_near_field_anc",
-      "target": "low-frequency rumble near pillow",
-      "reason": "A limited quiet-zone strategy may help with predictable low-frequency portions of aircraft events.",
+      "type": "safety_pass_through",
+      "target": "alarms, sirens, smoke detectors, urgent speech",
+      "reason": "Mitigation must preserve safety-critical sounds.",
+      "priority": "high"
+    },
+    {
+      "type": "near_field_anc",
+      "target": "low-frequency quiet zone near pillow",
+      "reason": "Low-frequency event tails may be reduced in a small quiet zone, but intermittent peaks require conservative handling.",
       "priority": "medium"
     },
     {
-      "type": "sleep_routine_and_masking",
-      "target": "perceived aircraft event contrast",
-      "reason": "Low-level masking can make intermittent events less startling when configured safely.",
+      "type": "controlled_masking_sound",
+      "target": "perceived residual event contrast",
+      "reason": "Low-level masking can reduce annoyance when it stays below safe levels and preserves alerts.",
       "priority": "low"
     }
   ],
   "blocked_controls": [
     {
-      "type": "high_frequency_anc",
-      "target": "sharp broadband aircraft peaks",
-      "reason": "High-frequency and transient components are not reliable open-air ANC targets.",
+      "type": "whole_room_anc",
+      "target": "entire room",
+      "reason": "Open-air whole-room cancellation is not realistic for reflected environmental noise.",
       "priority": "high"
     }
   ],
   "anc_policy": {
     "enabled": true,
-    "reason": "Enable only for conservative low-frequency quiet-zone support, not for whole-room aircraft cancellation.",
+    "reason": "Enable only as a limited low-frequency local quiet-zone strategy.",
     "target_bands_hz": [
       {
         "min": 35,
@@ -78,30 +133,47 @@
       }
     ],
     "quiet_zone": "bedside_pillow_area",
-    "microphone_strategy": "reference microphone near likely window path and error microphone near sleep position",
-    "speaker_strategy": "calibrated low-frequency-capable bedside speaker pair",
-    "preserve_events": ["alarm", "siren", "smoke_detector", "urgent_speech"],
+    "microphone_strategy": "reference microphone near likely entry path and error microphone near sleep position",
+    "speaker_strategy": "calibrated low-frequency-capable bedside speaker array",
+    "preserve_events": [
+      "alarm",
+      "siren",
+      "smoke_detector",
+      "urgent_speech"
+    ],
     "limits": {
       "max_output_mode": "conservative",
       "requires_calibration": true,
-      "event_triggered_mode": true
+      "disable_for_impulsive_events": false
     }
+  },
+  "analysis_conclusion": {
+    "summary": "Limited local ANC may be considered only after measurement confirms the low-frequency target.",
+    "confidence": "medium",
+    "anc_decision": "partial",
+    "rationale": "Low-frequency event tails may be reduced in a small quiet zone, but intermittent peaks require conservative handling.",
+    "next_step": "Run the measurement plan, then validate calibration before any active playback."
   },
   "safety": {
     "decision": "pass_with_warnings",
     "rules": [
-      "Do not promise full cancellation of aircraft events.",
-      "Disable unsafe or uncalibrated output.",
-      "Preserve safety-critical sounds."
+      "Do not claim medical diagnosis or guaranteed sleep improvement.",
+      "Do not claim whole-room cancellation.",
+      "Preserve alarms, sirens, smoke detectors, and urgent speech.",
+      "Do not retain raw audio by default.",
+      "Require calibrated hardware and conservative output limits before real playback."
     ]
   },
   "privacy": {
     "raw_audio_retained": false,
-    "notes": ["Derived event features are sufficient for planning."]
+    "notes": [
+      "Default mode keeps only derived acoustic features.",
+      "Raw recordings should not be uploaded or stored unless the user explicitly opts in."
+    ]
   },
   "caveats": [
-    "Aircraft noise can contain high-energy broadband peaks that active control may not handle.",
-    "Building envelope improvements may matter more than active control.",
-    "The plan requires calibrated hardware before any real acoustic output."
+    "This plan is not a medical diagnosis.",
+    "A laptop speaker is not a valid actuator for real traffic or aircraft ANC.",
+    "Real deployment requires calibrated microphones, speakers, and local DSP."
   ]
 }

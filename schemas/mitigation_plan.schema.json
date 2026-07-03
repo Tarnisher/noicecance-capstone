@@ -8,11 +8,14 @@
     "plan_id",
     "scenario",
     "input_summary",
+    "measurement_plan",
+    "observed_features",
     "noise_profile",
     "control_suitability",
     "recommended_controls",
     "blocked_controls",
     "anc_policy",
+    "analysis_conclusion",
     "safety",
     "privacy",
     "caveats"
@@ -53,6 +56,89 @@
         },
         "hardware_assumption": {
           "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "measurement_plan": {
+      "type": "object",
+      "required": [
+        "objective",
+        "privacy_mode",
+        "recommended_windows",
+        "microphone_positions",
+        "observations_to_log",
+        "derived_features_to_extract",
+        "minimum_sample_count",
+        "safety_notes"
+      ],
+      "properties": {
+        "objective": {
+          "type": "string"
+        },
+        "privacy_mode": {
+          "type": "string",
+          "enum": ["local_features_only"]
+        },
+        "recommended_windows": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "microphone_positions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "observations_to_log": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "derived_features_to_extract": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "minimum_sample_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "safety_notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "observed_features": {
+      "type": "object",
+      "required": ["provided", "raw_audio_retained", "derived_features", "notes"],
+      "properties": {
+        "provided": {
+          "type": "boolean"
+        },
+        "raw_audio_retained": {
+          "type": "boolean",
+          "const": false
+        },
+        "derived_features": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["boolean", "number", "string"]
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": true
@@ -171,6 +257,30 @@
         "limits": {
           "type": "object",
           "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "analysis_conclusion": {
+      "type": "object",
+      "required": ["summary", "confidence", "anc_decision", "rationale", "next_step"],
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "anc_decision": {
+          "type": "string",
+          "enum": ["recommended", "partial", "not_recommended", "blocked"]
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "next_step": {
+          "type": "string"
         }
       },
       "additionalProperties": true

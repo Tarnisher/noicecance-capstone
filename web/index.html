@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NoiceCance Demo</title>
+    <title>NoiceCance Local Assessment Demo</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -15,7 +15,7 @@
             <h1>NoiceCance</h1>
           </div>
           <div class="status-strip" aria-label="System status">
-            <span id="statusMode">Offline deterministic demo</span>
+            <span id="statusMode">Local-first assessment demo</span>
             <span id="statusDecision">Awaiting analysis</span>
           </div>
         </header>
@@ -31,9 +31,14 @@
             <button class="scenario-tab" type="button" data-scenario="high_frequency">
               High-frequency rejection
             </button>
+            <button class="scenario-tab" type="button" data-scenario="custom">
+              Custom assessment
+            </button>
           </div>
-          <label class="complaint-label" for="complaintInput">Noise complaint</label>
-          <textarea id="complaintInput" rows="4"></textarea>
+          <div class="complaint-field">
+            <label class="complaint-label" for="complaintInput">Noise problem and goal</label>
+            <textarea id="complaintInput" rows="5"></textarea>
+          </div>
           <div class="actions">
             <button id="runButton" class="primary-action" type="button">Run agent loop</button>
             <button id="exportButton" class="secondary-action" type="button">Export JSON</button>
@@ -98,6 +103,14 @@
             <div id="noiseProfile" class="metric-grid"></div>
           </section>
 
+          <section class="panel measurement-panel" aria-label="Measurement plan">
+            <div class="panel-heading">
+              <h2>Measurement Plan</h2>
+              <span id="measurementBadge" class="badge">local only</span>
+            </div>
+            <div id="measurementPlan" class="measurement-grid"></div>
+          </section>
+
           <section class="panel suitability-panel" aria-label="Control suitability">
             <div class="panel-heading">
               <h2>Control Suitability</h2>
@@ -115,6 +128,14 @@
               <ul id="recommendedControls" class="control-list"></ul>
               <ul id="blockedControls" class="control-list blocked"></ul>
             </div>
+          </section>
+
+          <section class="panel conclusion-panel" aria-label="Evidence conclusion">
+            <div class="panel-heading">
+              <h2>Evidence Conclusion</h2>
+              <span id="conclusionBadge" class="badge">pending</span>
+            </div>
+            <div id="conclusionPanel" class="conclusion-card"></div>
           </section>
 
           <section class="panel json-panel" aria-label="Mitigation JSON">

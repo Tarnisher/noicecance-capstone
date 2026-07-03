@@ -90,6 +90,37 @@ class AcousticSceneAgent:
         )
 
 
+class MeasurementAdvisorAgent:
+    name = "Measurement Advisor Agent"
+
+    def run(self, state: JsonDict) -> AgentEvent:
+        profile = state.get("noise_profile", {})
+        bands = set(profile.get("dominant_bands", []))
+        event_pattern = str(profile.get("event_pattern", "mixed"))
+        has_audio_features = bool(state.get("audio_features"))
+
+        if "low_frequency" in bands:
+            target = "confirm low-frequency stability and likely entry paths"
+        elif "high_frequency" in bands or event_pattern == "impulsive":
+            target = "document peak events and passive-control priorities"
+        else:
+            target = "collect enough local evidence to classify the noise source"
+
+        context = {
+            "target": target,
+            "privacy_mode": "local_features_only",
+            "has_measured_features": has_audio_features,
+            "minimum_samples": 4 if event_pattern in {"intermittent", "mixed"} else 2,
+        }
+        state["measurement_context"] = context
+        return AgentEvent(
+            agent=self.name,
+            action="draft_measurement_targets",
+            summary=f"Measurement target: {target}.",
+            data=context,
+        )
+
+
 class PolicyPlanningAgent:
     name = "Policy Planning Agent"
 
@@ -170,6 +201,8 @@ class ReportAgent:
             "headline": _headline(plan, safety),
             "scenario": plan["scenario"]["name"],
             "anc_status": "enabled" if plan["anc_policy"].get("enabled") else "disabled",
+            "measurement_objective": plan["measurement_plan"]["objective"],
+            "conclusion": plan["analysis_conclusion"]["summary"],
             "top_recommendations": [
                 control["type"] for control in plan.get("recommended_controls", [])[:3]
             ],
@@ -211,17 +244,18 @@ def run_agent_loop(
     agents = [
         UserIntentAgent(),
         AcousticSceneAgent(),
+        MeasurementAdvisorAgent(),
         PolicyPlanningAgent(),
         SafetyPrivacyAgent(),
     ]
 
-    for agent in agents[:2]:
+    for agent in agents[:3]:
         _record(state, agent.run(state))
 
     for iteration in range(1, max_iterations + 1):
         state["iterations"] = iteration
-        _record(state, agents[2].run(state))
         _record(state, agents[3].run(state))
+        _record(state, agents[4].run(state))
 
         revision = state["revision_request"]
         if not revision["required"]:
@@ -363,10 +397,10 @@ def _infer_goal(complaint: str, scenario: str) -> str:
 
 def _headline(plan: JsonDict, safety: JsonDict) -> str:
     if safety["decision"] == "blocked":
-        return "ANC is blocked for this profile; use non-ANC controls first."
+        return "ANC is blocked; use measured evidence to prioritize non-ANC controls."
     if plan["anc_policy"].get("enabled"):
-        return "Use a mitigation-first plan with limited local low-frequency ANC."
-    return "Use non-ANC mitigation controls for this noise profile."
+        return "Measure first, then consider limited local low-frequency ANC."
+    return "Collect local evidence and use non-ANC mitigation controls first."
 
 
 def _public_result(state: JsonDict) -> JsonDict:

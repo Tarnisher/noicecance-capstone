@@ -1,14 +1,15 @@
 # NoiceCance Project State
 
-Last updated: 2026-06-29
+Last updated: 2026-07-03
 
 ## Purpose
 
-NoiceCance is a mitigation-first AI agent prototype for residents exposed to transportation noise. The first MVP scenarios are:
+NoiceCance is a local-first multi-agent noise assessment and mitigation prototype. It helps users describe a noise problem, plan safe measurements, analyze privacy-preserving derived acoustic features, and generate an evidence-based mitigation plan. The current judge-facing web demo includes:
 
 - Homes facing a two-way six-lane intersection.
 - Homes near an airport.
 - A high-frequency or impulsive noise rejection case used to prove that the system blocks unsuitable ANC proposals.
+- A custom local assessment mode for user-written complaints.
 
 The project is intended for the Kaggle AI Agents: Intensive Vibe Coding Capstone Project, likely under the Agents for Good track.
 
@@ -16,9 +17,9 @@ The project is intended for the Kaggle AI Agents: Intensive Vibe Coding Capstone
 
 NoiceCance is not a universal active-noise-control generator.
 
-The stable output is `mitigation_plan.json`. An `anc_policy` section is optional and should appear only when local low-frequency near-field ANC is plausible. If the noise profile is high-frequency, impulsive, unpredictable, or strongly reverberant, the system should disable ANC and recommend non-ANC controls such as passive insulation, room changes, source control, masking, or certified hearing protection.
+The stable output is `mitigation_plan.json`. It now includes `measurement_plan`, `observed_features`, `analysis_conclusion`, recommended controls, blocked controls, safety rules, privacy rules, and optional `anc_policy`. ANC is only one candidate control and should appear only when local low-frequency near-field ANC is plausible. If the noise profile is high-frequency, impulsive, unpredictable, or strongly reverberant, the system should disable ANC and recommend non-ANC controls such as passive insulation, room changes, source control, masking, or certified hearing protection.
 
-The real-time acoustic path is local-first. LLMs or agents should not run the low-latency audio loop. Agents operate at the supervisory layer: intent interpretation, scene analysis, policy planning, safety review, reporting, and future tool orchestration.
+The real-time acoustic path is local-first. LLMs or agents should not run the low-latency audio loop. Agents operate at the supervisory layer: intent interpretation, measurement planning, scene analysis, policy planning, safety review, reporting, and future tool orchestration.
 
 ## Safety Boundaries
 
@@ -45,6 +46,9 @@ The real-time acoustic path is local-first. LLMs or agents should not run the lo
   - `analyze_noise_profile`
   - `assess_control_suitability`
   - `generate_mitigation_plan`
+  - custom local assessment scenario
+  - measurement-plan, observed-feature, and analysis-conclusion sections
+  - input-quality gate for irrelevant custom text such as greetings
 
 ### Tool Adapter
 
@@ -60,6 +64,7 @@ The real-time acoustic path is local-first. LLMs or agents should not run the lo
 - `src/noicecance_core/agent_loop.py`
   - `User Intent Agent`
   - `Acoustic Scene Agent`
+  - `Measurement Advisor Agent`
   - `Policy Planning Agent`
   - `Safety & Privacy Agent`
   - `Report Agent`
@@ -79,7 +84,7 @@ The real-time acoustic path is local-first. LLMs or agents should not run the lo
 - `web/styles.css`
 - `web/app.js`
 
-The web demo is static and has no build step. It supports scenario switching, free-text complaint input, an agent trace, sound-field visualization, control suitability, recommended and blocked controls, and exportable `mitigation_plan.json`.
+The web demo is static and has no build step. It supports scenario switching, custom complaint input, an agent trace, measurement targets, sound-field visualization, control suitability, recommended and blocked controls, an evidence conclusion, and exportable `mitigation_plan.json`. For irrelevant custom input, it now shows `Need noise details` and asks for structured noise context instead of selecting controls.
 
 ### Schemas and Examples
 
@@ -94,38 +99,40 @@ The web demo is static and has no build step. It supports scenario switching, fr
 - `tests/test_agent_loop.py`
 - `tests/test_stdio_tool_server.py`
 
-Current expected result: 13 tests pass.
+Current expected result after the measurement-workflow and input-quality updates: 17 tests pass.
 
 ## Verified Commands
 
 Run from repository root:
 
 ```powershell
-node --check noicecance-capstone\web\app.js
-conda run -n cvuni python -m unittest discover -s noicecance-capstone\tests
-conda run -n cvuni python -m compileall noicecance-capstone\src noicecance-capstone\tests
+node --check web\app.js
+conda run -n cvuni python -m unittest discover -s tests
+conda run -n cvuni python -m compileall src tests
 ```
 
 Useful demos:
 
 ```powershell
-conda run -n cvuni python noicecance-capstone\src\noicecance_core\demo.py --scenario intersection
-conda run -n cvuni python noicecance-capstone\src\noicecance_core\tools_demo.py check --scenario high_frequency
-conda run -n cvuni python noicecance-capstone\src\noicecance_core\agent_loop_demo.py --scenario high_frequency --force-unsafe-first-draft
-conda run -n cvuni python noicecance-capstone\src\noicecance_core\stdio_tool_client_demo.py --scenario high_frequency
+conda run -n cvuni python src\noicecance_core\demo.py --scenario intersection
+conda run -n cvuni python src\noicecance_core\demo.py --scenario custom --complaint "Low hum after midnight near the bedroom wall."
+conda run -n cvuni python src\noicecance_core\tools_demo.py check --scenario high_frequency
+conda run -n cvuni python src\noicecance_core\agent_loop_demo.py --scenario high_frequency --force-unsafe-first-draft
+conda run -n cvuni python src\noicecance_core\stdio_tool_client_demo.py --scenario high_frequency
 ```
 
 Static web demo:
 
 ```text
-noicecance-capstone/web/index.html
+web/index.html
 ```
 
-Browser verification already confirmed:
+Browser verification confirmed after the latest measurement-workflow UI update:
 
 - Desktop page renders.
-- Initial intersection scenario shows 5 trace steps and `ANC limited`.
+- Initial intersection scenario shows 6 trace steps and `ANC limited`.
 - High-frequency scenario shows `ANC blocked`.
+- Irrelevant custom input such as `你好` shows `Need noise details`, low confidence, `clarify_noise_problem`, and `collect_basic_observations`.
 - No console errors during tested interactions.
 - Mobile-width check had no horizontal overflow.
 
@@ -133,7 +140,7 @@ Browser verification already confirmed:
 
 - Use conda environment `cvuni` for Python commands.
 - No new dependencies have been installed.
-- `git status` currently fails with `fatal: not a git repository`, even though a `.git` directory is visible. Do not rely on Git status until this is investigated.
+- `noicecance-capstone` is now its own Git repository on branch `main`.
 - Python `compileall` has created `__pycache__` directories. They were not deleted because no destructive cleanup was requested.
 
 ## Handoff Rule
@@ -152,6 +159,7 @@ After meaningful project changes, update `PROJECT_STATE.md` in the same turn.
 - ADK / Agents CLI scaffold.
 - LLM-backed agents.
 - Real audio recording ingestion.
+- Real local audio feature extraction from `.wav` files.
 - Real DSP or hardware integration.
 - Sound-field physics simulation beyond the current planning visualization.
 - Docker or cloud deployment.
@@ -161,12 +169,11 @@ After meaningful project changes, update `PROJECT_STATE.md` in the same turn.
 
 ## Recommended Next Steps
 
-1. Decide whether to upgrade the MCP-like stdio bridge to an official MCP server. This may require a dependency approval step.
-2. Decide whether to scaffold an ADK project with Agents CLI or keep the current lightweight structure until the web demo is stronger.
-3. Improve the static web demo with stronger visual polish and a clearer first-run narrative for judges.
-4. Add a simple local audio feature extractor that stores only derived features, not raw audio.
-5. Start `docs/writeup-draft.md` and `docs/video-script.md` for Kaggle submission materials.
+1. Polish the README for public GitHub submission and add screenshots if time allows.
+2. Start `docs/writeup-draft.md` and `docs/video-script.md` for Kaggle submission materials.
+3. Add a simple local audio feature extractor that stores only derived features, not raw audio.
+4. Decide whether to upgrade the MCP-like stdio bridge to an official MCP server or scaffold ADK after explicit approval for any new dependencies.
 
 ## Current Best Story for Judges
 
-NoiceCance helps transportation-noise residents understand what can and cannot be mitigated. It uses an agentic workflow to turn a complaint into a structured mitigation plan, rejects unsafe or physically unsuitable ANC proposals, and produces an exportable plan that can later drive calibrated local hardware. The project is deliberately honest about limits: ANC is optional, local, low-frequency, and safety-gated rather than universal.
+NoiceCance helps users move from a vague noise complaint to an evidence-based action plan. It uses an agentic workflow to interpret the user goal, recommend safe local measurements, analyze derived acoustic features, reject unsafe or physically unsuitable ANC proposals, and export a structured mitigation plan. The project is deliberately honest about limits: ANC is optional, local, low-frequency, and safety-gated rather than universal.

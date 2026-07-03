@@ -2,23 +2,38 @@ const scenarioDefaults = {
   intersection: {
     complaint:
       "I live on the second floor facing a two-way six-lane intersection. At night I hear braking, horns, motorcycles, and a low engine rumble. I want to sleep but still hear alarms.",
+    id: "intersection_resident",
     name: "Six-lane intersection resident",
+    primaryGoal: "sleep_protection",
     sourceLabel: "Traffic source",
     waves: "traffic",
   },
   airport: {
     complaint:
       "I live near an airport. Several times per hour, aircraft create loud low-frequency waves that wake my family. We need a plan for nighttime sleep.",
+    id: "airport_adjacent_home",
     name: "Airport-adjacent home",
+    primaryGoal: "nighttime_sleep_protection",
     sourceLabel: "Aircraft path",
     waves: "airport",
   },
   high_frequency: {
     complaint:
       "The main noise is sharp, high-pitched, and unpredictable. I want to know whether a speaker or ultrasonic array can cancel it.",
+    id: "high_frequency_impulsive_noise",
     name: "High-frequency impulsive noise",
+    primaryGoal: "avoid_bad_anc_recommendation",
     sourceLabel: "Sharp source",
     waves: "blocked",
+  },
+  custom: {
+    complaint:
+      "My apartment has a repeating low hum after midnight near the bedroom wall. I need to know what to measure before choosing insulation, masking, or any active control.",
+    id: "custom_local_assessment",
+    name: "Custom local noise assessment",
+    primaryGoal: "evidence_based_mitigation",
+    sourceLabel: "Suspected source",
+    waves: "traffic",
   },
 };
 
@@ -37,10 +52,14 @@ const elements = {
   suitability: document.getElementById("suitabilityList"),
   recommended: document.getElementById("recommendedControls"),
   blocked: document.getElementById("blockedControls"),
+  measurement: document.getElementById("measurementPlan"),
+  conclusion: document.getElementById("conclusionPanel"),
   json: document.getElementById("jsonOutput"),
   iterationBadge: document.getElementById("iterationBadge"),
   confidenceBadge: document.getElementById("confidenceBadge"),
   ancBadge: document.getElementById("ancBadge"),
+  measurementBadge: document.getElementById("measurementBadge"),
+  conclusionBadge: document.getElementById("conclusionBadge"),
   privacyBadge: document.getElementById("privacyBadge"),
   mapBadge: document.getElementById("mapBadge"),
   sourceLabel: document.getElementById("sourceLabel"),
@@ -75,21 +94,105 @@ function analyzeNoiseProfile(scenario, complaint) {
     Object.assign(flags, { high: true, impulsive: true, broadband: true });
   }
 
-  if (containsAny(text, ["rumble", "engine", "truck", "aircraft", "plane", "low frequency"])) {
+  const lowWords = [
+    "rumble",
+    "engine",
+    "truck",
+    "aircraft",
+    "plane",
+    "low frequency",
+    "low-frequency",
+    "low hum",
+    "hum",
+    "humming",
+    "drone",
+    "droning",
+    "buzz",
+    "buzzing",
+    "vibration",
+    "vibrating",
+    "bass",
+  ];
+  const highWords = ["high-pitched", "sharp", "squeal", "whine", "hiss", "ultrasonic"];
+  const impulsiveWords = ["horn", "brake", "bang", "impact", "sudden", "impulsive"];
+  const intermittentWords = ["takeoff", "landing", "passes", "several times", "per hour"];
+  const contextWords = [
+    "noise",
+    "sound",
+    "loud",
+    "quiet",
+    "bedroom",
+    "wall",
+    "window",
+    "door",
+    "room",
+    "sleep",
+    "study",
+    "work",
+    "measure",
+    "record",
+    "dba",
+    "decibel",
+    "噪音",
+    "噪声",
+    "声音",
+    "吵",
+    "响",
+    "嗡",
+    "轰鸣",
+    "低频",
+    "高频",
+    "振动",
+    "震动",
+    "刺耳",
+    "机场",
+    "飞机",
+    "交通",
+    "马路",
+    "汽车",
+    "卡车",
+    "喇叭",
+  ];
+  const hasTextSignal = containsAny(text, [
+    ...lowWords,
+    ...highWords,
+    ...impulsiveWords,
+    ...intermittentWords,
+    ...contextWords,
+  ]);
+
+  if (scenario === "custom" && !hasTextSignal) {
+    return {
+      noise_classes: ["insufficient_noise_description"],
+      dominant_bands: ["broadband"],
+      event_pattern: "continuous",
+      source_model: "insufficient information to classify a noise source",
+      confidence: "low",
+      input_quality: {
+        status: "needs_noise_description",
+        reason: "The custom input does not describe a noise source, timing, impact, or measurement.",
+      },
+      flags,
+    };
+  }
+
+  if (
+    containsAny(text, lowWords)
+  ) {
     flags.low = true;
     bands.add("low_frequency");
     appendUnique(classes, "low_frequency_rumble");
   }
-  if (containsAny(text, ["high-pitched", "sharp", "squeal", "whine", "hiss", "ultrasonic"])) {
+  if (containsAny(text, highWords)) {
     flags.high = true;
     bands.add("high_frequency");
     appendUnique(classes, "high_frequency_noise");
   }
-  if (containsAny(text, ["horn", "brake", "bang", "impact", "sudden", "impulsive"])) {
+  if (containsAny(text, impulsiveWords)) {
     flags.impulsive = true;
     appendUnique(classes, "impulsive_events");
   }
-  if (containsAny(text, ["takeoff", "landing", "passes", "several times", "per hour"])) {
+  if (containsAny(text, intermittentWords)) {
     flags.intermittent = true;
     appendUnique(classes, "intermittent_peak_events");
   }
@@ -107,6 +210,32 @@ function analyzeNoiseProfile(scenario, complaint) {
 }
 
 function assessControlSuitability(profile) {
+  if (profile.input_quality?.status === "needs_noise_description") {
+    const reason = "No noise-specific evidence was provided, so controls should not be selected yet.";
+    return {
+      near_field_anc: {
+        status: "not_recommended",
+        score: 0,
+        reason,
+      },
+      passive_insulation: {
+        status: "not_recommended",
+        score: 0,
+        reason: "Physical controls need a described or measured noise source first.",
+      },
+      masking_sound: {
+        status: "not_recommended",
+        score: 0,
+        reason: "Masking should not be recommended before the target noise is described.",
+      },
+      hearing_protection: {
+        status: "not_recommended",
+        score: 0,
+        reason: "Hearing protection guidance requires exposure context or measured levels.",
+      },
+    };
+  }
+
   const bands = new Set(profile.dominant_bands);
   const hasLow = profile.flags.low || bands.has("low_frequency");
   const hasHigh = profile.flags.high || bands.has("high_frequency");
@@ -174,30 +303,29 @@ function generatePlan(scenario, complaint) {
   const ancPolicy = ancPolicyFor(scenario, suitability, profile);
   const safety = safetyDecision(ancStatus, ancPolicy);
   const scenarioInfo = scenarioDefaults[scenario];
+  const measurementPlan = measurementPlanFor(scenario, profile, suitability);
 
   return {
     schema_version: "2.0",
     plan_id: `web-plan-${scenario}`,
     scenario: {
-      id:
-        scenario === "airport"
-          ? "airport_adjacent_home"
-          : scenario === "high_frequency"
-            ? "high_frequency_impulsive_noise"
-            : "intersection_resident",
+      id: scenarioInfo.id,
       name: scenarioInfo.name,
-      primary_goal: scenario === "high_frequency" ? "avoid_bad_anc_recommendation" : "sleep_protection",
+      primary_goal: scenarioInfo.primaryGoal,
     },
     input_summary: {
       complaint,
       recording_used: false,
       hardware_assumption: "future calibrated quiet-zone hardware",
     },
+    measurement_plan: measurementPlan,
+    observed_features: observedFeatures(),
     noise_profile: stripFlags(profile),
     control_suitability: suitability,
     recommended_controls: recommended,
     blocked_controls: blocked,
     anc_policy: ancPolicy,
+    analysis_conclusion: analysisConclusion(profile, suitability, ancPolicy),
     safety,
     privacy: {
       raw_audio_retained: false,
@@ -221,6 +349,11 @@ function runAgentLoop() {
       agent: "Acoustic Scene Agent",
       action: "classify_noise_scene",
       summary: `Classified ${plan.noise_profile.noise_classes.join(", ")}.`,
+    },
+    {
+      agent: "Measurement Advisor Agent",
+      action: "draft_measurement_targets",
+      summary: plan.measurement_plan.objective,
     },
     {
       agent: "Policy Planning Agent",
@@ -249,6 +382,8 @@ function runAgentLoop() {
       headline: headlineFor(plan, safetyReview),
       scenario: plan.scenario.name,
       anc_status: plan.anc_policy.enabled ? "enabled" : "disabled",
+      measurement_objective: plan.measurement_plan.objective,
+      conclusion: plan.analysis_conclusion.summary,
       top_recommendations: plan.recommended_controls.slice(0, 3).map((item) => item.type),
       blocked_controls: safetyReview.blocked_controls,
       privacy: "raw audio not retained by default",
@@ -259,6 +394,39 @@ function runAgentLoop() {
 }
 
 function controlsForProfile(profile, suitability) {
+  if (profile.input_quality?.status === "needs_noise_description") {
+    return {
+      recommended: [
+        {
+          type: "clarify_noise_problem",
+          target: "noise source, timing, room, and user goal",
+          reason: "The input does not yet describe a noise problem, so the next step is structured intake rather than mitigation.",
+          priority: "high",
+        },
+        {
+          type: "collect_basic_observations",
+          target: "first local observation",
+          reason: "Record when the noise occurs, where it is heard, what it sounds like, and what activity it affects.",
+          priority: "high",
+        },
+      ],
+      blocked: [
+        {
+          type: "near_field_anc",
+          target: "unknown noise profile",
+          reason: "Active control cannot be assessed without a described or measured noise target.",
+          priority: "high",
+        },
+        {
+          type: "whole_room_anc",
+          target: "unknown room noise",
+          reason: "Whole-room cancellation is not a valid default when the noise source is unknown.",
+          priority: "high",
+        },
+      ],
+    };
+  }
+
   const recommended = [
     {
       type: "passive_insulation",
@@ -381,23 +549,29 @@ function checkSafety(plan) {
 
 function render(result) {
   const { plan, safety_review: safety, events } = result;
+  const needsNoiseDetails = plan.noise_profile.input_quality?.status === "needs_noise_description";
   renderTrace(events);
   renderProfile(plan.noise_profile);
+  renderMeasurement(plan.measurement_plan);
   renderSuitability(plan.control_suitability);
   renderControls(plan.recommended_controls, plan.blocked_controls);
+  renderConclusion(plan.analysis_conclusion);
   renderMap(activeScenario, plan);
 
   elements.json.textContent = JSON.stringify(plan, null, 2);
   elements.iterationBadge.textContent = `${result.iterations} iteration`;
   elements.confidenceBadge.textContent = plan.noise_profile.confidence;
+  elements.measurementBadge.textContent = plan.measurement_plan.privacy_mode;
   elements.privacyBadge.textContent = plan.privacy.raw_audio_retained ? "raw audio retained" : "raw audio off";
 
-  const ancText = plan.anc_policy.enabled ? "ANC limited" : "ANC blocked";
+  const ancText = needsNoiseDetails ? "Need details" : plan.anc_policy.enabled ? "ANC limited" : "ANC blocked";
   elements.ancBadge.textContent = ancText;
-  elements.ancBadge.className = `badge ${plan.anc_policy.enabled ? "warn" : "blocked"}`;
+  elements.ancBadge.className = `badge ${needsNoiseDetails || plan.anc_policy.enabled ? "warn" : "blocked"}`;
   elements.mapBadge.textContent = ancText;
   elements.mapBadge.className = elements.ancBadge.className;
-  elements.statusDecision.textContent = safety.decision === "blocked" ? "ANC blocked" : "Plan ready";
+  elements.conclusionBadge.textContent = plan.analysis_conclusion.anc_decision;
+  elements.conclusionBadge.className = elements.ancBadge.className;
+  elements.statusDecision.textContent = needsNoiseDetails ? "Need noise details" : safety.decision === "blocked" ? "ANC blocked" : "Plan ready";
 }
 
 function renderTrace(events) {
@@ -429,6 +603,26 @@ function renderProfile(profile) {
         <div class="metric-card">
           <span>${escapeHtml(label)}</span>
           <strong>${escapeHtml(value)}</strong>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function renderMeasurement(measurementPlan) {
+  const blocks = [
+    ["Objective", [measurementPlan.objective]],
+    ["Where and when to measure", measurementPlan.recommended_windows],
+    ["Mic or phone positions", measurementPlan.microphone_positions],
+    ["Derived features", measurementPlan.derived_features_to_extract],
+  ];
+
+  elements.measurement.innerHTML = blocks
+    .map(
+      ([label, items]) => `
+        <div class="measurement-block">
+          <strong>${escapeHtml(label)}</strong>
+          <ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
         </div>
       `,
     )
@@ -468,6 +662,23 @@ function renderControls(recommended, blocked) {
   elements.blocked.innerHTML = blocked.map(controlItem).join("");
 }
 
+function renderConclusion(conclusion) {
+  elements.conclusion.innerHTML = `
+    <div>
+      <strong>Decision</strong>
+      <p>${escapeHtml(conclusion.summary)}</p>
+    </div>
+    <div>
+      <strong>Rationale</strong>
+      <p>${escapeHtml(conclusion.rationale)}</p>
+    </div>
+    <div>
+      <strong>Next step</strong>
+      <p>${escapeHtml(conclusion.next_step)}</p>
+    </div>
+  `;
+}
+
 function controlItem(control) {
   return `
     <li>
@@ -505,6 +716,9 @@ function wavePaths(kind) {
 }
 
 function headlineFor(plan, safety) {
+  if (plan.noise_profile.input_quality?.status === "needs_noise_description") {
+    return "Need a noise description before choosing controls.";
+  }
   if (safety.decision === "blocked") return "ANC is blocked for this profile; use non-ANC controls first.";
   if (plan.anc_policy.enabled) return "Use a mitigation-first plan with limited local low-frequency ANC.";
   return "Use non-ANC mitigation controls for this noise profile.";
@@ -516,6 +730,9 @@ function caveatsFor(ancStatus, profile) {
     "A laptop speaker is not a valid actuator for real traffic or aircraft ANC.",
     "Real deployment requires calibrated microphones, speakers, and local DSP.",
   ];
+  if (profile.input_quality?.status === "needs_noise_description") {
+    caveats.push("No mitigation controls were selected because the input does not describe a noise problem.");
+  }
   if (["blocked", "not_recommended"].includes(ancStatus)) {
     caveats.push("ANC is disabled because the profile is not a suitable active-control target.");
   }
@@ -523,6 +740,150 @@ function caveatsFor(ancStatus, profile) {
     caveats.push("Impulsive events may be better handled by passive controls and alert-aware policies.");
   }
   return caveats;
+}
+
+function measurementPlanFor(scenario, profile, suitability) {
+  const bands = new Set(profile.dominant_bands);
+  const ancStatus = suitability.near_field_anc.status;
+
+  if (profile.input_quality?.status === "needs_noise_description") {
+    return {
+      objective: "Describe the noise problem before choosing mitigation controls.",
+      privacy_mode: "local_features_only",
+      recommended_windows: [
+        "Wait for an actual noise event before measuring.",
+        "Write down when it happens, how long it lasts, and whether it repeats.",
+      ],
+      microphone_positions: [
+        "Main place where the noise bothers you, such as bed, desk, or sofa.",
+        "Suspected entry point if known, such as window, wall, door gap, or vent.",
+      ],
+      observations_to_log: [
+        "what the noise sounds like",
+        "time of day and duration",
+        "room and likely source",
+        "impact such as sleep, focus, stress, or safety concern",
+      ],
+      derived_features_to_extract: [
+        "median_dba",
+        "peak_dba",
+        "dominant_frequency_band",
+        "event_pattern",
+      ],
+      minimum_sample_count: 1,
+      safety_notes: [
+        "Do not select ANC, masking, or insulation until a real noise target is described.",
+        "Keep raw audio local by default; retain only derived acoustic features in the report.",
+      ],
+    };
+  }
+
+  const windows = [
+    "Capture one quiet baseline when the target noise is absent.",
+    "Capture one representative period when the target noise is present.",
+  ];
+  if (scenario === "airport" || ["intermittent", "mixed"].includes(profile.event_pattern)) {
+    windows.push("Log at least three peak events with timestamps.");
+  }
+  if (scenario === "intersection" || ["continuous", "mixed"].includes(profile.event_pattern)) {
+    windows.push("Measure a 10 to 15 minute nighttime window near the sleep area.");
+  }
+
+  const positions = [
+    "At the main listener position, such as pillow, desk, or chair.",
+    "Near the likely entry path, such as window, wall vent, door gap, or facade.",
+  ];
+  if (scenario === "custom") positions.push("At one comparison point away from the suspected source.");
+
+  const derived = [
+    "median_dba",
+    "peak_dba",
+    "dominant_frequency_band",
+    "event_pattern",
+    "low_frequency_dominance",
+    "high_frequency_dominance",
+  ];
+  if (bands.has("high_frequency")) derived.push("impulsive_event_count");
+
+  const safetyNotes = [
+    "Keep raw audio local by default; retain only derived acoustic features in the report.",
+    "Record whether alarms, sirens, smoke detectors, or urgent speech must remain audible.",
+  ];
+  if (["partial", "recommended"].includes(ancStatus)) {
+    safetyNotes.push("Before active playback, repeat measurements with calibrated microphones and output limits.");
+  }
+
+  return {
+    objective: measurementObjective(scenario, ancStatus),
+    privacy_mode: "local_features_only",
+    recommended_windows: windows,
+    microphone_positions: positions,
+    observations_to_log: [
+      "time of day and duration",
+      "room, window, and door state",
+      "source notes such as traffic, aircraft, machinery, voices, or unknown",
+      "user impact such as sleep, focus, stress, or safety concern",
+    ],
+    derived_features_to_extract: derived,
+    minimum_sample_count: scenario === "airport" ? 4 : 2,
+    safety_notes: safetyNotes,
+  };
+}
+
+function measurementObjective(scenario, ancStatus) {
+  if (["partial", "recommended"].includes(ancStatus)) {
+    return "Confirm whether low-frequency content is stable enough for a limited quiet-zone policy.";
+  }
+  if (scenario === "custom") return "Collect enough local evidence to classify the noise before choosing controls.";
+  return "Confirm the noise profile and collect evidence for non-ANC mitigation.";
+}
+
+function observedFeatures() {
+  return {
+    provided: false,
+    raw_audio_retained: false,
+    derived_features: {},
+    notes: ["No measured features were provided; conclusion is based on complaint and scenario templates."],
+  };
+}
+
+function analysisConclusion(profile, suitability, ancPolicy) {
+  const ancStatus = suitability.near_field_anc.status;
+  if (profile.input_quality?.status === "needs_noise_description") {
+    return {
+      summary: "This input does not describe a noise problem yet, so NoiceCance is asking for measurement context instead of choosing controls.",
+      confidence: "low",
+      anc_decision: "not_recommended",
+      rationale: suitability.near_field_anc.reason,
+      next_step: "Describe the noise source, timing, location, and impact, or provide local derived audio features.",
+    };
+  }
+
+  if (ancPolicy.enabled) {
+    return {
+      summary: "Limited local ANC may be considered only after measurement confirms the low-frequency target.",
+      confidence: profile.confidence,
+      anc_decision: ancStatus,
+      rationale: suitability.near_field_anc.reason,
+      next_step: "Run the measurement plan, then validate calibration before any active playback.",
+    };
+  }
+  if (ancStatus === "blocked") {
+    return {
+      summary: "ANC is not suitable for the current profile; prioritize passive or source controls.",
+      confidence: profile.confidence,
+      anc_decision: ancStatus,
+      rationale: suitability.near_field_anc.reason,
+      next_step: "Document peaks, entry paths, and non-ANC control priorities using the measurement plan.",
+    };
+  }
+  return {
+    summary: "More local evidence is needed before recommending active control.",
+    confidence: profile.confidence,
+    anc_decision: ancStatus,
+    rationale: suitability.near_field_anc.reason,
+    next_step: "Collect derived features and rerun the planner with measured observations.",
+  };
 }
 
 function setScenario(scenario) {
@@ -560,6 +921,8 @@ function eventPattern(flags) {
 function sourceModel(scenario, flags) {
   if (scenario === "intersection") return "outdoor traffic transmitted through window and room reflections";
   if (scenario === "airport") return "outdoor aircraft noise transmitted through building envelope with room reflections";
+  if (scenario === "custom" && flags.low) return "local low-frequency source hypothesis requires measurement";
+  if (scenario === "custom" && !flags.high) return "local source hypothesis requires measurement";
   if (flags.high) return "unpredictable high-frequency source with reflections";
   return "environmental noise with unknown source geometry";
 }

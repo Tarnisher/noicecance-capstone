@@ -59,9 +59,24 @@ class NoiceCanceAgentLoopTests(unittest.TestCase):
 
         self.assertIn("User Intent Agent", agents)
         self.assertIn("Acoustic Scene Agent", agents)
+        self.assertIn("Measurement Advisor Agent", agents)
         self.assertIn("Policy Planning Agent", agents)
         self.assertIn("Safety & Privacy Agent", agents)
         self.assertIn("Report Agent", agents)
+
+    def test_report_includes_measurement_objective_and_conclusion(self) -> None:
+        result = run_agent_loop(
+            scenario="custom",
+            complaint="A repeating low hum appears after midnight near the bedroom wall.",
+        )
+
+        self.assertEqual(result["status"], "completed")
+        self.assertIn("measurement_objective", result["report"])
+        self.assertIn("conclusion", result["report"])
+        self.assertEqual(
+            result["plan"]["measurement_plan"]["privacy_mode"],
+            "local_features_only",
+        )
 
 
 if __name__ == "__main__":

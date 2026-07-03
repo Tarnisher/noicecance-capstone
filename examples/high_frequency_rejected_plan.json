@@ -1,19 +1,66 @@
 {
   "schema_version": "2.0",
-  "plan_id": "example-high-frequency-rejected",
+  "plan_id": "plan-high_frequency",
+  "generated_at": "2026-07-02T23:23:28+00:00",
   "scenario": {
-    "id": "high_frequency_workshop_noise",
+    "id": "high_frequency_impulsive_noise",
     "name": "High-frequency impulsive noise",
     "primary_goal": "avoid_bad_anc_recommendation"
   },
   "input_summary": {
-    "complaint": "Sharp, high-pitched, unpredictable noise from a nearby workshop is the main problem.",
+    "complaint": "Sharp, high-pitched, unpredictable noise is the main problem.",
     "recording_used": false,
-    "hardware_assumption": "unknown consumer speaker hardware"
+    "hardware_assumption": "future calibrated quiet-zone hardware"
+  },
+  "measurement_plan": {
+    "objective": "Confirm the noise profile and collect evidence for non-ANC mitigation.",
+    "privacy_mode": "local_features_only",
+    "recommended_windows": [
+      "Collect one quiet baseline when the target noise is absent.",
+      "Collect one representative period when the target noise is present."
+    ],
+    "microphone_positions": [
+      "At the main listener position, such as pillow, desk, or chair.",
+      "Near the likely entry path, such as window, wall vent, door gap, or facade."
+    ],
+    "observations_to_log": [
+      "time of day and duration",
+      "room, window, and door state",
+      "source notes such as traffic, aircraft, machinery, voices, or unknown",
+      "user impact such as sleep, focus, stress, or safety concern"
+    ],
+    "derived_features_to_extract": [
+      "median_dba",
+      "peak_dba",
+      "dominant_frequency_band",
+      "event_pattern",
+      "low_frequency_dominance",
+      "high_frequency_dominance",
+      "impulsive_event_count"
+    ],
+    "minimum_sample_count": 2,
+    "safety_notes": [
+      "Keep raw audio local by default; retain only derived acoustic features in the report.",
+      "Record whether alarms, sirens, smoke detectors, or urgent speech must remain audible."
+    ]
+  },
+  "observed_features": {
+    "provided": false,
+    "raw_audio_retained": false,
+    "derived_features": {},
+    "notes": [
+      "No measured features were provided; conclusion is based on complaint and scenario templates."
+    ]
   },
   "noise_profile": {
-    "noise_classes": ["high_frequency_noise", "impulsive_events", "unpredictable_source"],
-    "dominant_bands": ["high_frequency", "broadband"],
+    "noise_classes": [
+      "high_frequency_noise",
+      "impulsive_events"
+    ],
+    "dominant_bands": [
+      "broadband",
+      "high_frequency"
+    ],
     "event_pattern": "impulsive",
     "source_model": "unpredictable high-frequency source with reflections",
     "confidence": "medium"
@@ -22,71 +69,95 @@
     "near_field_anc": {
       "status": "blocked",
       "score": 0.08,
-      "reason": "High-frequency impulsive noise changes too quickly across space for reliable open-air cancellation."
+      "reason": "High-frequency or impulsive noise is a poor open-air ANC target; phase cancellation can fail or create louder hot spots."
     },
     "passive_insulation": {
       "status": "recommended",
-      "score": 0.86,
-      "reason": "Sealing, mass, and absorption are more appropriate for high-frequency airborne noise."
+      "score": 0.9,
+      "reason": "Passive controls reduce airborne and reflected noise without depending on phase cancellation."
     },
     "masking_sound": {
       "status": "partial",
-      "score": 0.38,
-      "reason": "May reduce annoyance but should not be used as hearing protection."
+      "score": 0.48,
+      "reason": "Masking can reduce perceived residual events, but it must not cover safety-critical sounds or replace hearing protection."
     },
     "hearing_protection": {
       "status": "recommended",
       "score": 0.82,
-      "reason": "Certified protection may be required for occupational or repeated high-frequency exposure."
+      "reason": "Certified protection may be needed for high-frequency or occupational exposure; for sleep it is optional only if safety alerts remain audible."
     }
   },
   "recommended_controls": [
     {
       "type": "passive_insulation",
-      "target": "high-frequency airborne noise path",
-      "reason": "High-frequency noise is better handled through sealing, absorption, barriers, and source control.",
+      "target": "airborne and reflected noise paths",
+      "reason": "Passive treatment works across frequency bands and does not depend on a clean phase model.",
       "priority": "high"
     },
     {
-      "type": "hearing_protection",
-      "target": "potentially hazardous exposure",
-      "reason": "Certified protection is more reliable than consumer ANC for high-frequency impulsive noise.",
+      "type": "safety_pass_through",
+      "target": "alarms, sirens, smoke detectors, urgent speech",
+      "reason": "Mitigation must preserve safety-critical sounds.",
+      "priority": "high"
+    },
+    {
+      "type": "hearing_protection_or_source_control",
+      "target": "high-frequency or impulsive events",
+      "reason": "High-frequency impulsive noise should be handled with passive, engineering, or certified protective controls.",
       "priority": "high"
     }
   ],
   "blocked_controls": [
     {
+      "type": "whole_room_anc",
+      "target": "entire room",
+      "reason": "Open-air whole-room cancellation is not realistic for reflected environmental noise.",
+      "priority": "high"
+    },
+    {
       "type": "near_field_anc",
-      "target": "sharp high-frequency events",
-      "reason": "Open-air ANC can fail or create louder hot spots for high-frequency impulsive noise.",
+      "target": "dominant noise profile",
+      "reason": "High-frequency or impulsive noise is a poor open-air ANC target; phase cancellation can fail or create louder hot spots.",
       "priority": "high"
     },
     {
       "type": "ultrasonic_cancellation",
-      "target": "audible high-frequency noise",
-      "reason": "Ultrasonic transducers do not directly cancel audible noise unless converted into audible sound, which adds safety and distortion risks.",
+      "target": "audible environmental noise",
+      "reason": "Ultrasonic transducers do not directly cancel audible noise and can introduce distortion or safety concerns.",
       "priority": "high"
     }
   ],
   "anc_policy": {
     "enabled": false,
-    "reason": "Noise profile is dominated by high-frequency impulsive content that is unsuitable for open-air ANC."
+    "reason": "High-frequency or impulsive noise is a poor open-air ANC target; phase cancellation can fail or create louder hot spots."
+  },
+  "analysis_conclusion": {
+    "summary": "ANC is not suitable for the current profile; prioritize passive or source controls.",
+    "confidence": "medium",
+    "anc_decision": "blocked",
+    "rationale": "High-frequency or impulsive noise is a poor open-air ANC target; phase cancellation can fail or create louder hot spots.",
+    "next_step": "Use the measurement plan to document peaks, entry paths, and non-ANC control priorities."
   },
   "safety": {
     "decision": "blocked",
     "rules": [
-      "Do not recommend ANC for high-frequency impulsive noise.",
-      "Do not recommend ultrasonic cancellation for audible noise.",
-      "Recommend passive or certified protective controls instead."
+      "Do not enable ANC for this profile.",
+      "Recommend passive, engineering, or certified protective controls instead.",
+      "Do not use ultrasonic cancellation claims for audible noise."
     ]
   },
   "privacy": {
     "raw_audio_retained": false,
-    "notes": ["No raw audio is needed to reject ANC for this described profile."]
+    "notes": [
+      "Default mode keeps only derived acoustic features.",
+      "Raw recordings should not be uploaded or stored unless the user explicitly opts in."
+    ]
   },
   "caveats": [
-    "If this is a workplace exposure, professional measurement and applicable safety rules matter.",
-    "Masking sound is not a substitute for hearing protection.",
-    "A mitigation plan should prioritize source control where possible."
+    "This plan is not a medical diagnosis.",
+    "A laptop speaker is not a valid actuator for real traffic or aircraft ANC.",
+    "Real deployment requires calibrated microphones, speakers, and local DSP.",
+    "ANC is disabled because the profile is not a suitable active-control target.",
+    "Impulsive events may be better handled by passive controls and alert-aware policies."
   ]
 }

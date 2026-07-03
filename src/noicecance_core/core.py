@@ -42,6 +42,14 @@ SCENARIOS: dict[str, dict[str, str]] = {
             "Sharp, high-pitched, unpredictable noise is the main problem."
         ),
     },
+    "custom": {
+        "id": "custom_local_assessment",
+        "name": "Custom local noise assessment",
+        "primary_goal": "evidence_based_mitigation",
+        "default_complaint": (
+            "Describe the noise source, room, time pattern, and what you need to protect."
+        ),
+    },
 }
 
 SAFETY_EVENTS = ["alarm", "siren", "smoke_detector", "urgent_speech"]
@@ -83,10 +91,96 @@ def analyze_noise_profile(
         bands.update(["high_frequency", "broadband"])
         flags.update({"high": True, "impulsive": True, "broadband": True})
 
-    low_words = ["rumble", "engine", "truck", "aircraft", "plane", "low frequency"]
+    low_words = [
+        "rumble",
+        "engine",
+        "truck",
+        "aircraft",
+        "plane",
+        "low frequency",
+        "low-frequency",
+        "low hum",
+        "hum",
+        "humming",
+        "drone",
+        "droning",
+        "buzz",
+        "buzzing",
+        "vibration",
+        "vibrating",
+        "bass",
+    ]
     high_words = ["high-pitched", "sharp", "squeal", "whine", "hiss", "ultrasonic"]
     impulsive_words = ["horn", "brake", "bang", "impact", "sudden", "impulsive"]
     intermittent_words = ["takeoff", "landing", "passes", "several times", "per hour"]
+    context_words = [
+        "noise",
+        "sound",
+        "loud",
+        "quiet",
+        "bedroom",
+        "wall",
+        "window",
+        "door",
+        "room",
+        "sleep",
+        "study",
+        "work",
+        "measure",
+        "record",
+        "dba",
+        "decibel",
+        "噪音",
+        "噪声",
+        "声音",
+        "吵",
+        "响",
+        "嗡",
+        "轰鸣",
+        "低频",
+        "高频",
+        "振动",
+        "震动",
+        "刺耳",
+        "机场",
+        "飞机",
+        "交通",
+        "马路",
+        "汽车",
+        "卡车",
+        "喇叭",
+    ]
+    has_feature_signal = any(
+        features.get(key)
+        for key in (
+            "low_frequency_dominance",
+            "high_frequency_dominance",
+            "impulsive_events",
+            "intermittent_events",
+            "median_db_a",
+            "peak_db_a",
+            "dominant_frequency_hz",
+            "event_count",
+        )
+    )
+    has_text_signal = _contains_any(
+        text,
+        low_words + high_words + impulsive_words + intermittent_words + context_words,
+    )
+
+    if scenario_key == "custom" and not has_text_signal and not has_feature_signal:
+        return {
+            "noise_classes": ["insufficient_noise_description"],
+            "dominant_bands": ["broadband"],
+            "event_pattern": "continuous",
+            "source_model": "insufficient information to classify a noise source",
+            "confidence": "low",
+            "input_quality": {
+                "status": "needs_noise_description",
+                "reason": "The custom input does not describe a noise source, timing, impact, or measurement.",
+            },
+            "flags": flags,
+        }
 
     if _contains_any(text, low_words) or features.get("low_frequency_dominance"):
         flags["low"] = True
@@ -129,6 +223,36 @@ def assess_control_suitability(
     flags = noise_profile.get("flags", {})
     bands = set(noise_profile.get("dominant_bands", []))
     event_pattern = noise_profile.get("event_pattern", "mixed")
+    input_quality = noise_profile.get("input_quality", {})
+
+    if input_quality.get("status") == "needs_noise_description":
+        reason = "No noise-specific evidence was provided, so controls should not be selected yet."
+        return {
+            "near_field_anc": {
+                "status": "not_recommended",
+                "score": 0.0,
+                "reason": reason,
+            },
+            "passive_insulation": {
+                "status": "not_recommended",
+                "score": 0.0,
+                "reason": "Physical controls need a described or measured noise source first.",
+            },
+            "masking_sound": {
+                "status": "not_recommended",
+                "score": 0.0,
+                "reason": "Masking should not be recommended before the target noise is described.",
+            },
+            "hearing_protection": {
+                "status": "not_recommended",
+                "score": 0.0,
+                "reason": "Hearing protection guidance requires exposure context or measured levels.",
+            },
+            "metadata": {
+                "user_goal": user_goal,
+                "hardware_assumption": hardware_assumption,
+            },
+        }
 
     has_low = flags.get("low") or "low_frequency" in bands
     has_high = flags.get("high") or "high_frequency" in bands
@@ -221,6 +345,9 @@ def generate_mitigation_plan(
     recommended, blocked = _controls_for_profile(profile, suitability)
     anc_policy = _anc_policy_for(scenario_key, suitability, profile)
     safety = _safety_decision(anc_status, anc_policy)
+    measurement_plan = _measurement_plan_for(scenario_key, profile, suitability)
+    observed_features = _observed_features(audio_features)
+    analysis_conclusion = _analysis_conclusion(profile, suitability, anc_policy)
 
     return {
         "schema_version": "2.0",
@@ -236,6 +363,8 @@ def generate_mitigation_plan(
             "recording_used": bool(audio_features),
             "hardware_assumption": hardware_assumption,
         },
+        "measurement_plan": measurement_plan,
+        "observed_features": observed_features,
         "noise_profile": {k: v for k, v in profile.items() if k != "flags"},
         "control_suitability": {
             k: deepcopy(v)
@@ -245,6 +374,7 @@ def generate_mitigation_plan(
         "recommended_controls": recommended,
         "blocked_controls": blocked,
         "anc_policy": anc_policy,
+        "analysis_conclusion": analysis_conclusion,
         "safety": safety,
         "privacy": {
             "raw_audio_retained": False,
@@ -264,6 +394,40 @@ def _controls_for_profile(
     anc_status = suitability["near_field_anc"]["status"]
     event_pattern = profile.get("event_pattern", "mixed")
     bands = set(profile.get("dominant_bands", []))
+    input_quality = profile.get("input_quality", {})
+
+    if input_quality.get("status") == "needs_noise_description":
+        return (
+            [
+                {
+                    "type": "clarify_noise_problem",
+                    "target": "noise source, timing, room, and user goal",
+                    "reason": "The input does not yet describe a noise problem, so the next step is structured intake rather than mitigation.",
+                    "priority": "high",
+                },
+                {
+                    "type": "collect_basic_observations",
+                    "target": "first local observation",
+                    "reason": "Record when the noise occurs, where it is heard, what it sounds like, and what activity it affects.",
+                    "priority": "high",
+                },
+            ],
+            [
+                {
+                    "type": "near_field_anc",
+                    "target": "unknown noise profile",
+                    "reason": "Active control cannot be assessed without a described or measured noise target.",
+                    "priority": "high",
+                },
+                {
+                    "type": "whole_room_anc",
+                    "target": "unknown room noise",
+                    "reason": "Whole-room cancellation is not a valid default when the noise source is unknown.",
+                    "priority": "high",
+                },
+            ],
+        )
+
     recommended = [
         {
             "type": "passive_insulation",
@@ -368,6 +532,171 @@ def _anc_policy_for(
     }
 
 
+def _measurement_plan_for(
+    scenario_key: str,
+    profile: dict[str, Any],
+    suitability: dict[str, Any],
+) -> dict[str, Any]:
+    bands = set(profile.get("dominant_bands", []))
+    event_pattern = str(profile.get("event_pattern", "mixed"))
+    anc_status = suitability["near_field_anc"]["status"]
+    input_quality = profile.get("input_quality", {})
+
+    if input_quality.get("status") == "needs_noise_description":
+        return {
+            "objective": "Describe the noise problem before choosing mitigation controls.",
+            "privacy_mode": "local_features_only",
+            "recommended_windows": [
+                "Wait for an actual noise event before measuring.",
+                "Write down when it happens, how long it lasts, and whether it repeats.",
+            ],
+            "microphone_positions": [
+                "Main place where the noise bothers you, such as bed, desk, or sofa.",
+                "Suspected entry point if known, such as window, wall, door gap, or vent.",
+            ],
+            "observations_to_log": [
+                "what the noise sounds like",
+                "time of day and duration",
+                "room and likely source",
+                "impact such as sleep, focus, stress, or safety concern",
+            ],
+            "derived_features_to_extract": [
+                "median_dba",
+                "peak_dba",
+                "dominant_frequency_band",
+                "event_pattern",
+            ],
+            "minimum_sample_count": 1,
+            "safety_notes": [
+                "Do not select ANC, masking, or insulation until a real noise target is described.",
+                "Keep raw audio local by default; retain only derived acoustic features in the report.",
+            ],
+        }
+
+    windows = [
+        "Collect one quiet baseline when the target noise is absent.",
+        "Collect one representative period when the target noise is present.",
+    ]
+    if scenario_key == "airport" or event_pattern in {"intermittent", "mixed"}:
+        windows.append("Log at least three peak events with timestamps.")
+    if scenario_key == "intersection" or event_pattern in {"continuous", "mixed"}:
+        windows.append("Measure a 10 to 15 minute nighttime window near the sleep area.")
+
+    positions = [
+        "At the main listener position, such as pillow, desk, or chair.",
+        "Near the likely entry path, such as window, wall vent, door gap, or facade.",
+    ]
+    if scenario_key == "custom":
+        positions.append("At one comparison point farther from the suspected source.")
+
+    derived_features = [
+        "median_dba",
+        "peak_dba",
+        "dominant_frequency_band",
+        "event_pattern",
+        "low_frequency_dominance",
+        "high_frequency_dominance",
+    ]
+    if "high_frequency" in bands:
+        derived_features.append("impulsive_event_count")
+
+    notes = [
+        "Keep raw audio local by default; retain only derived acoustic features in the report.",
+        "Record whether alarms, sirens, smoke detectors, or urgent speech must remain audible.",
+    ]
+    if anc_status in {"partial", "recommended"}:
+        notes.append(
+            "Before any active playback, repeat measurements with calibrated microphones and output limits."
+        )
+
+    return {
+        "objective": _measurement_objective(scenario_key, anc_status),
+        "privacy_mode": "local_features_only",
+        "recommended_windows": windows,
+        "microphone_positions": positions,
+        "observations_to_log": [
+            "time of day and duration",
+            "room, window, and door state",
+            "source notes such as traffic, aircraft, machinery, voices, or unknown",
+            "user impact such as sleep, focus, stress, or safety concern",
+        ],
+        "derived_features_to_extract": derived_features,
+        "minimum_sample_count": 2 if scenario_key != "airport" else 4,
+        "safety_notes": notes,
+    }
+
+
+def _measurement_objective(scenario_key: str, anc_status: str) -> str:
+    if anc_status in {"partial", "recommended"}:
+        return "Confirm whether low-frequency content is stable enough for a limited quiet-zone policy."
+    if scenario_key == "custom":
+        return "Collect enough local evidence to classify the noise before choosing controls."
+    return "Confirm the noise profile and collect evidence for non-ANC mitigation."
+
+
+def _observed_features(audio_features: dict[str, Any] | None) -> dict[str, Any]:
+    allowed = {
+        "low_frequency_dominance",
+        "high_frequency_dominance",
+        "impulsive_events",
+        "intermittent_events",
+        "median_db_a",
+        "peak_db_a",
+        "dominant_frequency_hz",
+        "event_count",
+    }
+    derived = {}
+    for key, value in (audio_features or {}).items():
+        if key in allowed and isinstance(value, (bool, int, float, str)):
+            derived[key] = value
+
+    return {
+        "provided": bool(derived),
+        "raw_audio_retained": False,
+        "derived_features": derived,
+        "notes": (
+            ["No measured features were provided; conclusion is based on complaint and scenario templates."]
+            if not derived
+            else ["Only privacy-preserving derived features are included in this plan."]
+        ),
+    }
+
+
+def _analysis_conclusion(
+    profile: dict[str, Any],
+    suitability: dict[str, Any],
+    anc_policy: dict[str, Any],
+) -> dict[str, Any]:
+    anc_status = suitability["near_field_anc"]["status"]
+    input_quality = profile.get("input_quality", {})
+    if input_quality.get("status") == "needs_noise_description":
+        return {
+            "summary": "This input does not describe a noise problem yet, so NoiceCance is asking for measurement context instead of choosing controls.",
+            "confidence": "low",
+            "anc_decision": "not_recommended",
+            "rationale": suitability["near_field_anc"]["reason"],
+            "next_step": "Describe the noise source, timing, location, and impact, or provide local derived audio features.",
+        }
+
+    if anc_policy.get("enabled"):
+        summary = "Limited local ANC may be considered only after measurement confirms the low-frequency target."
+        next_step = "Run the measurement plan, then validate calibration before any active playback."
+    elif anc_status == "blocked":
+        summary = "ANC is not suitable for the current profile; prioritize passive or source controls."
+        next_step = "Use the measurement plan to document peaks, entry paths, and non-ANC control priorities."
+    else:
+        summary = "More local evidence is needed before recommending active control."
+        next_step = "Collect derived features and rerun the planner with measured observations."
+
+    return {
+        "summary": summary,
+        "confidence": profile.get("confidence", "low"),
+        "anc_decision": anc_status,
+        "rationale": suitability["near_field_anc"]["reason"],
+        "next_step": next_step,
+    }
+
+
 def _safety_decision(anc_status: str, anc_policy: dict[str, Any]) -> dict[str, Any]:
     if anc_status == "blocked":
         return {
@@ -399,6 +728,8 @@ def _caveats(anc_status: str, profile: dict[str, Any]) -> list[str]:
         "A laptop speaker is not a valid actuator for real traffic or aircraft ANC.",
         "Real deployment requires calibrated microphones, speakers, and local DSP.",
     ]
+    if profile.get("input_quality", {}).get("status") == "needs_noise_description":
+        caveats.append("No mitigation controls were selected because the input does not describe a noise problem.")
     if anc_status in {"blocked", "not_recommended"}:
         caveats.append("ANC is disabled because the profile is not a suitable active-control target.")
     if profile.get("event_pattern") in {"impulsive", "mixed"}:
@@ -415,6 +746,9 @@ def _normalize_scenario(scenario: str) -> str:
         "airport_adjacent_home": "airport",
         "airport_home": "airport",
         "aircraft": "airport",
+        "general": "custom",
+        "local": "custom",
+        "custom_assessment": "custom",
         "high": "high_frequency",
         "high_frequency_noise": "high_frequency",
         "rejected": "high_frequency",
@@ -443,6 +777,8 @@ def _source_model(scenario_key: str, flags: dict[str, bool]) -> str:
         return "outdoor traffic transmitted through window and room reflections"
     if scenario_key == "airport":
         return "outdoor aircraft noise transmitted through building envelope with room reflections"
+    if scenario_key == "custom" and flags["low"]:
+        return "local low-frequency source hypothesis requires measurement"
     if flags["high"]:
         return "unpredictable high-frequency source with reflections"
     return "environmental noise with unknown source geometry"

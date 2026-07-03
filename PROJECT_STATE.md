@@ -70,6 +70,14 @@ The real-time acoustic path is local-first. LLMs or agents should not run the lo
   - `Report Agent`
   - revision loop for unsafe plans
 
+### Local CLI
+
+- `src/noicecance_core/cli.py`
+  - `assess` command for local free-text complaint assessment
+  - `--complaint` input
+  - `--out` full JSON export
+  - defaults to the `custom` scenario so irrelevant input asks for noise details instead of inheriting a built-in scenario
+
 ### MCP-Like Stdio Bridge
 
 - `src/noicecance_core/stdio_tool_server.py`
@@ -95,6 +103,7 @@ The web demo is static and has no build step. It supports scenario switching, cu
 
 ### Tests
 
+- `tests/test_cli.py`
 - `tests/test_tools.py`
 - `tests/test_agent_loop.py`
 - `tests/test_stdio_tool_server.py`
@@ -132,7 +141,7 @@ Browser verification confirmed after the latest measurement-workflow UI update:
 - Desktop page renders.
 - Initial intersection scenario shows 6 trace steps and `ANC limited`.
 - High-frequency scenario shows `ANC blocked`.
-- Irrelevant custom input such as `你好` shows `Need noise details`, low confidence, `clarify_noise_problem`, and `collect_basic_observations`.
+- Irrelevant custom input such as a greeting shows `Need noise details`, low confidence, `clarify_noise_problem`, and `collect_basic_observations`.
 - No console errors during tested interactions.
 - Mobile-width check had no horizontal overflow.
 
@@ -163,14 +172,14 @@ After meaningful project changes, update `PROJECT_STATE.md` in the same turn.
 - Real DSP or hardware integration.
 - Sound-field physics simulation beyond the current planning visualization.
 - Docker or cloud deployment.
-- Kaggle Writeup.
+- Kaggle Writeup final submission.
 - YouTube video script.
 - Polished project README for final submission.
 
 ## Recommended Next Steps
 
-1. Polish the README for public GitHub submission and add screenshots if time allows.
-2. Start `docs/writeup-draft.md` and `docs/video-script.md` for Kaggle submission materials.
+1. Prepare Kaggle writeup and video-script materials for final submission.
+2. Polish the README for public GitHub submission and add screenshots if time allows.
 3. Add a simple local audio feature extractor that stores only derived features, not raw audio.
 4. Decide whether to upgrade the MCP-like stdio bridge to an official MCP server or scaffold ADK after explicit approval for any new dependencies.
 

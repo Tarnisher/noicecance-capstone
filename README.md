@@ -87,6 +87,22 @@ conda run -n cvuni python src\noicecance_core\agent_loop_demo.py --scenario high
 
 The `--force-unsafe-first-draft` mode intentionally creates an unsafe ANC proposal so the Safety & Privacy Agent can reject it and trigger a planner revision.
 
+## Local CLI
+
+The local CLI is the simplest workflow entry point for user-written complaints. It runs the same deterministic agent loop as the web demo and keeps the project local-first. It does not ingest audio files yet.
+
+```powershell
+conda run -n cvuni python src\noicecance_core\cli.py assess --complaint "Low hum after midnight near the bedroom wall."
+```
+
+Export the full agent-loop result as JSON:
+
+```powershell
+conda run -n cvuni python src\noicecance_core\cli.py assess --complaint "Sharp high-pitched unpredictable sound near the window." --out outputs\mitigation_plan.json
+```
+
+The CLI defaults to the `custom` scenario so unrelated input is handled by the input-quality gate instead of being forced into a built-in scenario.
+
 ## Static Web Demo
 
 Open [web/index.html](web/index.html) in a browser. The static demo runs entirely in the browser with no build step, server, network access, or new dependencies.
@@ -170,4 +186,4 @@ The capstone prototype will simulate this target rather than claiming full hardw
 
 ## Current Status
 
-Specification draft, deterministic planning core, local measurement workflow, local tool adapters, local multi-agent loop, MCP-like stdio bridge, static web demo, example plans, and focused deterministic tests are in place. Official MCP and ADK integration have not started yet.
+Specification draft, deterministic planning core, local measurement workflow, local CLI, local tool adapters, local multi-agent loop, MCP-like stdio bridge, static web demo, example plans, and focused deterministic tests are in place. Official MCP and ADK integration have not started yet.

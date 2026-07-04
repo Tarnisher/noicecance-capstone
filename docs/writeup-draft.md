@@ -151,6 +151,6 @@ The next submission step is to publish the cleaned repository, add the final Git
 
 ## Project Links
 
-Public project link: TODO add GitHub URL after publishing.
+Public project link: https://github.com/Tarnisher/noicecance-capstone
 
 Video: https://youtu.be/giKIYIX2Uxw

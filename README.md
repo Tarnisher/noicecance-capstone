@@ -263,6 +263,6 @@ Current status:
 - Video script draft in [docs/video-script.md](docs/video-script.md).
 - Final public project links still pending.
 
-Public project link: TODO add GitHub URL after publishing.
+Public project link: https://github.com/Tarnisher/noicecance-capstone
 
 Video: https://youtu.be/giKIYIX2Uxw

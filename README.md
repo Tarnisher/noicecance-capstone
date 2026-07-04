@@ -265,4 +265,4 @@ Current status:
 
 Public project link: TODO add GitHub URL after publishing.
 
-Video: TODO add YouTube URL after recording.
+Video: https://youtu.be/giKIYIX2Uxw

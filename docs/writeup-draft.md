@@ -153,4 +153,4 @@ The next submission step is to publish the cleaned repository, add the final Git
 
 Public project link: TODO add GitHub URL after publishing.
 
-Video: TODO add YouTube URL after recording, if submitting a video.
+Video: https://youtu.be/giKIYIX2Uxw

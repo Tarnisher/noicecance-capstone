@@ -1,6 +1,6 @@
 # NoiceCance Project State
 
-Last updated: 2026-07-03
+Last updated: 2026-07-04
 
 ## Purpose
 
@@ -78,6 +78,13 @@ The real-time acoustic path is local-first. LLMs or agents should not run the lo
   - `--out` full JSON export
   - defaults to the `custom` scenario so irrelevant input asks for noise details instead of inheriting a built-in scenario
 
+### Official MCP Server
+
+- `src/noicecance_core/mcp_server.py`
+  - built with official `mcp==1.28.1`
+  - exposes `analyze_noise_profile`, `generate_mitigation_plan`, `run_agent_loop`, and `check_safety_limits`
+  - wraps existing local NoiceCance tools without raw-audio upload or external service calls
+
 ### MCP-Like Stdio Bridge
 
 - `src/noicecance_core/stdio_tool_server.py`
@@ -104,11 +111,12 @@ The web demo is static and has no build step. It supports scenario switching, cu
 ### Tests
 
 - `tests/test_cli.py`
+- `tests/test_mcp_server.py`
 - `tests/test_tools.py`
 - `tests/test_agent_loop.py`
 - `tests/test_stdio_tool_server.py`
 
-Current expected result after the measurement-workflow and input-quality updates: 17 tests pass.
+Current expected result after the measurement-workflow, CLI, MCP server, and input-quality updates: 22 tests pass.
 
 ## Verified Commands
 
@@ -130,6 +138,12 @@ conda run -n cvuni python src\noicecance_core\agent_loop_demo.py --scenario high
 conda run -n cvuni python src\noicecance_core\stdio_tool_client_demo.py --scenario high_frequency
 ```
 
+The official MCP server command starts a stdio server for an MCP client and waits for protocol messages:
+
+```powershell
+conda run -n cvuni python src\noicecance_core\mcp_server.py --transport stdio
+```
+
 Static web demo:
 
 ```text
@@ -148,7 +162,7 @@ Browser verification confirmed after the latest measurement-workflow UI update:
 ## Known Environment Notes
 
 - Use conda environment `cvuni` for Python commands.
-- No new dependencies have been installed.
+- Official MCP dependency `mcp==1.28.1` is pinned in `requirements.txt` and was installed into `cvuni` for verification.
 - `noicecance-capstone` is now its own Git repository on branch `main`.
 - Python `compileall` has created `__pycache__` directories. They were not deleted because no destructive cleanup was requested.
 
@@ -164,7 +178,6 @@ After meaningful project changes, update `PROJECT_STATE.md` in the same turn.
 
 ## Not Implemented Yet
 
-- Official MCP SDK server.
 - ADK / Agents CLI scaffold.
 - LLM-backed agents.
 - Real audio recording ingestion.
@@ -172,16 +185,17 @@ After meaningful project changes, update `PROJECT_STATE.md` in the same turn.
 - Real DSP or hardware integration.
 - Sound-field physics simulation beyond the current planning visualization.
 - Docker or cloud deployment.
-- Kaggle Writeup final submission.
-- YouTube video script.
-- Polished project README for final submission.
+- Kaggle Writeup final submission. Draft is organized in `docs/writeup-draft.md`.
+- YouTube video recording and final link. Script draft is organized in `docs/video-script.md`.
+- Final README screenshots and public submission links.
 
 ## Recommended Next Steps
 
-1. Prepare Kaggle writeup and video-script materials for final submission.
-2. Polish the README for public GitHub submission and add screenshots if time allows.
-3. Add a simple local audio feature extractor that stores only derived features, not raw audio.
-4. Decide whether to upgrade the MCP-like stdio bridge to an official MCP server or scaffold ADK after explicit approval for any new dependencies.
+1. Record the short demo video from `docs/video-script.md`.
+2. Add final GitHub and video links to `README.md` and `docs/writeup-draft.md` when available.
+3. Add cover image or screenshots for Kaggle Media Gallery if time allows.
+4. Add a simple local audio feature extractor that stores only derived features, not raw audio.
+5. Decide whether to scaffold ADK after explicit approval for any new dependencies.
 
 ## Current Best Story for Judges
 

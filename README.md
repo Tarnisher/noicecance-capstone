@@ -1,189 +1,268 @@
 # NoiceCance
 
-Version: 3 - Local-first noise assessment prototype
+Local-first noise assessment agents for turning a vague noise complaint into a safe measurement plan and evidence-based mitigation report.
 
-NoiceCance is a local-first multi-agent prototype for helping people understand a noise problem, plan safe measurements, analyze privacy-preserving acoustic features, and choose realistic mitigation steps.
+NoiceCance was built for the Kaggle AI Agents: Intensive Vibe Coding Capstone Project in the Agents for Good track. The project focuses on a practical safety point: active noise cancellation is not a universal answer. The agent workflow first asks what should be measured, whether the noise profile is physically suitable for active control, and which non-ANC controls should be prioritized when ANC is unsafe or unrealistic.
 
-The judge-facing web demo currently includes:
+## What It Does
 
-- Homes facing a two-way six-lane intersection.
-- Homes near an airport.
-- A high-frequency or impulsive noise case that should reject ANC.
-- A custom local assessment mode for user-written complaints.
+NoiceCance converts a user complaint such as "low hum after midnight near the bedroom wall" into a structured `mitigation_plan.json` containing:
 
-Future extension scenarios may include truck cabins near highways, shared apartments, classrooms, workshops, and other high-noise work environments.
+- `measurement_plan`: where, when, and what to measure.
+- `noise_profile`: source classes, dominant bands, event pattern, and confidence.
+- `control_suitability`: suitability of near-field ANC, passive insulation, masking, and hearing protection.
+- `recommended_controls` and `blocked_controls`: practical options and refused options.
+- `analysis_conclusion`: a plain-language decision and next step.
+- optional `anc_policy`: included only for plausible low-frequency quiet-zone cases.
 
-The project is intended for the Kaggle AI Agents: Intensive Vibe Coding Capstone Project in the Agents for Good track.
+The project is local-first. Raw audio is not uploaded or retained by default. The current prototype uses complaint text and optional derived feature dictionaries; real `.wav` ingestion is intentionally not implemented yet.
 
-## Project Concept
+## Implemented
 
-NoiceCance converts a noise complaint into an evidence-based workflow: understand the user's goal, recommend what to measure, analyze the noise profile, decide which controls are physically appropriate, and export `mitigation_plan.json`.
+- Static browser demo with built-in scenarios and custom complaint input.
+- Local CLI for free-text assessment and JSON export.
+- Deterministic Python planning core.
+- Local multi-agent loop with trace events and safety revision.
+- Official MCP server built with the MCP Python SDK.
+- Dependency-free MCP-like stdio bridge for transparent tool-adapter inspection.
+- JSON schema and example plans.
+- Deterministic tests covering safety gates, CLI behavior, MCP tools, and input-quality handling.
 
-The static web demo is a scenario gallery and judge-facing interface. The intended product is a local deployable agent system: raw audio stays on the user's machine, agents extract only derived acoustic features, and the final report explains the evidence, measurement gaps, safety constraints, and recommended controls.
+## Quick Start
 
-NoiceCance is not a universal active-noise-control generator. ANC is only one possible control family. If a noise profile is dominated by high-frequency, impulsive, unpredictable, or highly reverberant sound, the system should reject ANC and recommend passive insulation, room changes, masking sound, engineering controls, or hearing protection instead.
-
-If the noise profile contains plausible low-frequency components, such as traffic rumble or aircraft low-frequency events near a bed-side quiet zone, the mitigation plan may include an optional `anc_policy` section for a future deployable unit. That unit would require microphones, speakers, calibration, and local DSP.
-
-The real-time acoustic control path is designed to be local-first. An LLM should not be required for low-latency audio cancellation. Agents are used at the supervisory layer for intent understanding, measurement planning, scene analysis, policy planning, safety review, explanation, and report generation.
-
-## Planned Capabilities
-
-- Free-text noise complaint analysis.
-- Built-in scenarios for intersection and airport-adjacent housing.
-- Custom local assessment mode.
-- Measurement planning: where to measure, when to measure, what observations to log, and which derived features to extract.
-- Optional local audio feature extraction.
-- Multi-agent planning with ADK.
-- MCP tools for acoustic analysis, simulation, safety checks, and policy export.
-- Offline mode using scenario templates and deterministic rules.
-- Web visualization of noise sources, quiet zones, microphone placement, speaker placement, and expected mitigation.
-- Exportable `mitigation_plan.json` with `measurement_plan`, `observed_features`, `analysis_conclusion`, and optional `anc_policy`.
-- Optional `anc_policy` section only when local low-frequency active control is suitable.
-- Explicit refusal of ANC when the physics or safety constraints do not support it.
-
-## Local Deterministic Demo
-
-The first implementation layer is a standard-library Python core. It does not require an LLM, network access, or new dependencies.
-
-From this repository root:
+From the repository root, install the pinned MCP dependency:
 
 ```powershell
-conda run -n cvuni python src\noicecance_core\demo.py --scenario intersection
-conda run -n cvuni python src\noicecance_core\demo.py --scenario airport
-conda run -n cvuni python src\noicecance_core\demo.py --scenario high_frequency
-conda run -n cvuni python src\noicecance_core\demo.py --scenario custom --complaint "Low hum after midnight near the bedroom wall."
+python -m pip install -r requirements.txt
 ```
 
-The generated output follows [schemas/mitigation_plan.schema.json](schemas/mitigation_plan.schema.json). Example plans are in [examples/](examples/).
-
-## Local Tool Adapter Demo
-
-The next layer exposes the same deterministic core as JSON-like tool functions. This is the interface that a future MCP server or ADK agent can call.
+Run the test suite:
 
 ```powershell
-conda run -n cvuni python src\noicecance_core\tools_demo.py analyze --scenario intersection
-conda run -n cvuni python src\noicecance_core\tools_demo.py assess --scenario airport
-conda run -n cvuni python src\noicecance_core\tools_demo.py generate --scenario airport
-conda run -n cvuni python src\noicecance_core\tools_demo.py check --scenario high_frequency
+python -m unittest discover -s tests
 ```
 
-## Local Multi-Agent Loop Demo
-
-The local loop simulates the planned multi-agent workflow without requiring an LLM, ADK project, or MCP server. It records a trace for:
-
-- User Intent Agent
-- Acoustic Scene Agent
-- Measurement Advisor Agent
-- Policy Planning Agent
-- Safety & Privacy Agent
-- Report Agent
+If you are using the local `cvuni` conda environment:
 
 ```powershell
-conda run -n cvuni python src\noicecance_core\agent_loop_demo.py --scenario intersection
-conda run -n cvuni python src\noicecance_core\agent_loop_demo.py --scenario custom --complaint "Low hum after midnight near the bedroom wall."
-conda run -n cvuni python src\noicecance_core\agent_loop_demo.py --scenario high_frequency --force-unsafe-first-draft
+conda run -n cvuni python -m pip install -r requirements.txt
+conda run -n cvuni python -m unittest discover -s tests
 ```
 
-The `--force-unsafe-first-draft` mode intentionally creates an unsafe ANC proposal so the Safety & Privacy Agent can reject it and trigger a planner revision.
+Expected result:
+
+```text
+Ran 22 tests
+OK
+```
+
+## Web Demo
+
+Open [web/index.html](web/index.html) in a browser. No build step, server, cloud account, or API key is required.
+
+The web demo includes:
+
+- Six-lane intersection resident.
+- Airport-adjacent home.
+- High-frequency impulsive noise case that blocks ANC.
+- Custom local assessment for user-written complaints.
+
+Try these checks:
+
+1. Select the high-frequency case and confirm ANC is blocked.
+2. Enter `Low hum after midnight near the bedroom wall.` in custom mode.
+3. Enter `hello` and confirm the app asks for noise details instead of inventing a plan.
+4. Export `mitigation_plan.json`.
 
 ## Local CLI
 
-The local CLI is the simplest workflow entry point for user-written complaints. It runs the same deterministic agent loop as the web demo and keeps the project local-first. It does not ingest audio files yet.
+The CLI is the simplest local workflow entry point. It runs the same deterministic agent loop as the web demo.
 
 ```powershell
-conda run -n cvuni python src\noicecance_core\cli.py assess --complaint "Low hum after midnight near the bedroom wall."
+python src\noicecance_core\cli.py assess --complaint "Low hum after midnight near the bedroom wall."
 ```
 
-Export the full agent-loop result as JSON:
+Export the full agent-loop result:
 
 ```powershell
-conda run -n cvuni python src\noicecance_core\cli.py assess --complaint "Sharp high-pitched unpredictable sound near the window." --out outputs\mitigation_plan.json
+python src\noicecance_core\cli.py assess --complaint "Sharp high-pitched unpredictable sound near the window." --out outputs\mitigation_plan.json
 ```
 
-The CLI defaults to the `custom` scenario so unrelated input is handled by the input-quality gate instead of being forced into a built-in scenario.
+Example behavior:
 
-## Static Web Demo
+- Low-frequency hum: produces a measurement-first plan and may allow limited near-field ANC as a future option.
+- High-frequency or impulsive noise: blocks ANC and recommends passive, source, or hearing-protection controls.
+- Irrelevant input such as `hello`: returns `needs_noise_description` and asks for structured noise context.
 
-Open [web/index.html](web/index.html) in a browser. The static demo runs entirely in the browser with no build step, server, network access, or new dependencies.
+## Official MCP Server
 
-It includes scenario switching, custom complaint input, an agent trace, measurement targets, sound-field visualization, control suitability, recommended and blocked controls, an evidence conclusion, and exportable `mitigation_plan.json`.
+NoiceCance includes an official MCP server built with `mcp==1.28.1`. It exposes local assessment tools without shell access, arbitrary file reads, raw-audio upload, or external service calls.
 
-## MCP-Like Stdio Tool Bridge
-
-The current bridge is dependency-free and MCP-like, not an official MCP SDK server. It uses newline-delimited JSON with two methods:
-
-- `list_tools`
-- `call_tool`
-
-Client demo:
+Start the stdio server for an MCP client:
 
 ```powershell
-conda run -n cvuni python src\noicecance_core\stdio_tool_client_demo.py --scenario high_frequency
+python src\noicecance_core\mcp_server.py --transport stdio
 ```
 
-Direct server example:
+When run manually, this command waits for MCP protocol messages until stopped. It is meant to be launched by an MCP client.
+
+Available MCP tools:
+
+- `analyze_noise_profile`
+- `generate_mitigation_plan`
+- `run_agent_loop`
+- `check_safety_limits`
+
+Example MCP client command configuration:
+
+```json
+{
+  "command": "python",
+  "args": [
+    "C:\\path\\to\\noicecance-capstone\\src\\noicecance_core\\mcp_server.py"
+  ]
+}
+```
+
+## Other Local Demos
+
+Generate a mitigation plan directly from the deterministic core:
 
 ```powershell
-'{"id":"1","method":"list_tools"}' | conda run -n cvuni python src\noicecance_core\stdio_tool_server.py
+python src\noicecance_core\demo.py --scenario intersection
+python src\noicecance_core\demo.py --scenario airport
+python src\noicecance_core\demo.py --scenario high_frequency
+python src\noicecance_core\demo.py --scenario custom --complaint "Low hum after midnight near the bedroom wall."
 ```
 
-The next integration step is to wrap the same `TOOLS` registry with an official MCP server after approving any required dependency.
+Run the deterministic multi-agent loop:
 
-## Safety Boundaries
+```powershell
+python src\noicecance_core\agent_loop_demo.py --scenario custom --complaint "Low hum after midnight near the bedroom wall."
+python src\noicecance_core\agent_loop_demo.py --scenario high_frequency --force-unsafe-first-draft
+```
 
-- NoiceCance does not provide medical diagnosis.
-- NoiceCance does not replace professional acoustic engineering, occupational safety, or hearing-protection advice.
-- The prototype does not claim that laptop speakers can cancel real traffic or aircraft noise at room scale.
-- The prototype does not claim that ultrasonic transducers can directly cancel audible traffic or aircraft noise.
-- The prototype does not treat ANC as a universal solution for high-frequency, impulsive, unpredictable, or complex reverberant noise.
-- Raw audio should not be uploaded or stored by default.
-- Safety-critical sounds such as alarms, sirens, smoke detectors, and urgent human speech must be preserved.
-- Output levels and ANC policies must remain within conservative safety limits.
+Inspect the dependency-free MCP-like stdio bridge:
 
-## Architecture Draft
+```powershell
+python src\noicecance_core\stdio_tool_client_demo.py --scenario high_frequency
+```
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    U["Resident"] --> UI["Web Demo"]
-    UI --> IA["User Intent Agent"]
-    IA --> MA["Measurement Advisor Agent"]
-    UI --> LA["Local Acoustic Feature Extractor"]
-    LA --> SA["Acoustic Scene Agent"]
-    MA --> PA["Policy Planning Agent"]
-    SA --> PA
-    PA --> MCP["MCP Acoustic Tools"]
-    MCP --> FIT["Control Suitability Assessor"]
-    FIT --> SIM["Sound Field Simulator"]
-    MCP --> SAFE["Safety Limit Checker"]
-    SAFE --> RA["Report Agent"]
-    SIM --> RA
-    FIT --> RA
-    RA --> UI
-    RA --> PLAN["mitigation_plan.json"]
-    PLAN --> MEASURE["measurement_plan"]
-    PLAN --> ANC["optional anc_policy"]
+    U["User complaint"] --> WEB["Static web demo"]
+    U --> CLI["Local CLI"]
+    WEB --> LOOP["Local agent loop"]
+    CLI --> LOOP
+    MCP["MCP client"] --> MCPS["NoiceCance MCP server"]
+    MCPS --> LOOP
+    LOOP --> INTENT["User Intent Agent"]
+    LOOP --> SCENE["Acoustic Scene Agent"]
+    LOOP --> MEASURE["Measurement Advisor Agent"]
+    LOOP --> POLICY["Policy Planning Agent"]
+    LOOP --> SAFETY["Safety & Privacy Agent"]
+    LOOP --> REPORT["Report Agent"]
+    REPORT --> PLAN["mitigation_plan.json"]
 ```
 
-## Deployment Path
+Agent roles:
 
-### Phase 1: Local Web Demo
+- User Intent Agent: infers user goal, privacy preference, and safety assumptions.
+- Acoustic Scene Agent: classifies complaint text and optional derived features.
+- Measurement Advisor Agent: recommends measurement targets and observations.
+- Policy Planning Agent: generates the mitigation plan and optional ANC policy.
+- Safety & Privacy Agent: blocks unsafe ANC and privacy violations.
+- Report Agent: produces the final explanation and JSON output.
 
-The first implementation should run locally on a laptop and support both connected and offline use:
+## Course Concepts
 
-- Connected mode: agents can generate personalized plans from the user's text and local derived features.
-- Offline mode: users can select built-in scenarios, enter a custom complaint, and inspect deterministic recommendations.
+The capstone demonstrates these course concepts:
 
-### Phase 2: Containerized Demo
+- Multi-agent system: deterministic agent roles, shared state, trace events, and safety revision.
+- MCP Server: official MCP server exposing NoiceCance tools.
+- Security features: local-first design, raw-audio non-retention, safety-critical sound preservation, and refusal of unsupported ANC.
+- Agent skills / CLI: command-line workflow for local assessment.
+- Deployability: static web demo and local Python commands that require no cloud service.
 
-After the local version works, the project can add a Docker-based path for repeatable judging and deployment.
+## Safety Boundaries
 
-### Phase 3: Hardware Integration Target
+- No medical diagnosis or guaranteed sleep improvement.
+- No claim that laptop speakers can cancel real traffic or aircraft noise at room scale.
+- No claim that ultrasonic transducers directly cancel audible environmental noise.
+- No whole-room open-air ANC claims for complex reflected environments.
+- Raw audio is not uploaded or retained by default.
+- Safety-critical sounds such as alarms, sirens, smoke detectors, and urgent speech must be preserved.
+- Real active playback would require calibrated microphones, calibrated speakers, local DSP, and conservative output limits.
 
-The exported `mitigation_plan.json` should be compatible with future deployment targets. If ANC is suitable, it may contain an `anc_policy` for a future unit made from microphones, speaker arrays, calibration routines, and local DSP. If ANC is unsuitable, the same plan should explain why and recommend non-ANC controls.
+## Not Implemented Yet
 
-The capstone prototype will simulate this target rather than claiming full hardware performance.
+- Real audio recording ingestion.
+- Local `.wav` feature extraction.
+- LLM-backed agents.
+- ADK / Agents CLI scaffold.
+- Real DSP or hardware integration.
+- Docker or cloud deployment.
+- Physics-grade sound-field simulation.
 
-## Current Status
+## Repository Layout
 
-Specification draft, deterministic planning core, local measurement workflow, local CLI, local tool adapters, local multi-agent loop, MCP-like stdio bridge, static web demo, example plans, and focused deterministic tests are in place. Official MCP and ADK integration have not started yet.
+```text
+src/noicecance_core/
+  core.py                 deterministic planning logic
+  agent_loop.py           local multi-agent workflow
+  cli.py                  local command-line assessment
+  mcp_server.py           official MCP server
+  tools.py                JSON-like tool adapters
+  stdio_tool_server.py    dependency-free MCP-like bridge
+
+web/
+  index.html              static demo page
+  app.js                  browser-side demo logic
+  styles.css              demo styling
+
+tests/
+  test_agent_loop.py
+  test_cli.py
+  test_mcp_server.py
+  test_stdio_tool_server.py
+  test_tools.py
+
+schemas/
+  mitigation_plan.schema.json
+
+examples/
+  intersection_plan.json
+  airport_plan.json
+  high_frequency_rejected_plan.json
+
+docs/
+  writeup-draft.md
+```
+
+## Validation
+
+Run from the repository root:
+
+```powershell
+python -m unittest discover -s tests
+python -m compileall src tests
+```
+
+The latest local verification passed with 22 Python tests.
+
+## Submission Status
+
+Current status:
+
+- Core prototype complete.
+- CLI complete.
+- Official MCP server complete.
+- Kaggle writeup draft in [docs/writeup-draft.md](docs/writeup-draft.md).
+- Video script draft in [docs/video-script.md](docs/video-script.md).
+- Final public project links still pending.
+
+Public project link: TODO add GitHub URL after publishing.
+
+Video: TODO add YouTube URL after recording.

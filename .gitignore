@@ -39,6 +39,7 @@ coverage/
 *.log
 *.tmp
 *.temp
+outputs/
 
 # OS and editor noise
 .DS_Store
